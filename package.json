@@ -11,5 +11,13 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^16.0.8"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JohnMTorgerson/critters.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JohnMTorgerson/critters/issues"
+  },
+  "homepage": "https://github.com/JohnMTorgerson/critters#readme"
 }

@@ -1,12 +1,25 @@
 // -------- Critter class -------- //
 
 export default class Critter {
-	constructor(canvas, cellSize, xPos, yPos, genome) {
+	constructor(canvas, gameOpts, params) {
+		if (typeof params === "undefined") params = {};
 		this.canvas = canvas;
-    this.cellSize = cellSize;
+    this.cellSize = gameOpts.cellSize;
 		this.context = this.canvas.getContext("2d");
-		this.position = {'x':xPos,'y':yPos};
-		this.genome = genome;
+		this.params = params;
+		this.gameOpts = gameOpts;
+		if (typeof params.position === "object") {
+			this.position = params.position;
+		} else {
+			// if position is not passed, create a random one
+			this.position = randomPosition(this.canvas, this.context, this.cellSize);
+		}
+		if (typeof params.genome === "object") {
+			this.genome = params.genome;
+		} else {
+			// if genome is not passed, create a random one
+			this.genome = randomGenome();
+		}
 	}
 
 	// method to move the critter's position
@@ -116,10 +129,153 @@ export default class Critter {
     // this.context.rect(x - r, y - r, r * 2, r * 2);
     // this.context.stroke();
 	}
+
+	// reproduction method,
+	// takes another critter to mate with as an argument
+	// returns an offspring critter with mixed, mutated genome
+	fuck(spouse) {
+		let genome = emptyGenome();
+		let rand = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
+
+		for (let i=0; i<=8; i++) {
+			// -- parent recombination
+			let parentGenome = rand() == 0 ? this.genome : spouse.genome;
+			genome[i.toString()].action = parentGenome[i.toString()].action;
+			genome[i.toString()].weight = parentGenome[i.toString()].weight;
+
+			// -- mutation
+			// first, mutate the weight a tiny bit
+			genome[i.toString()].weight += 2 * (rand() - 0.5) * this.gameOpts.weightMutationAmount;
+			// then, mutate the action (if chance dictates, per the mutation rate)
+			if (Math.floor(Math.random() / this.params.actionMutationRate) == 0) {
+				// if we're here, then we mutate the action to a random value
+				genome[i.toString()].action = Math.floor(Math.random() * 9);
+			}
+		}
+
+		return genome;
+	}
 }
 
 // -------- private utility functions -------- //
 
+// create a random genome
+function emptyGenome() {
+  return {
+  	0: {
+			action: null,
+			weight: null
+  	},
+  	1: {
+			action: null,
+			weight: null
+  	},
+  	2: {
+			action: null,
+			weight: null
+  	},
+  	3: {
+			action: null,
+			weight: null
+  	},
+  	4: {
+			action: null,
+			weight: null
+  	},
+  	5: {
+			action: null,
+			weight: null
+  	},
+  	6: {
+			action: null,
+			weight: null
+  	},
+  	7: {
+			action: null,
+			weight: null
+  	},
+  	8: {
+			action: null,
+			weight: null
+  	},
+    color: 'red'
+  }
+}
+
+// create a random genome
+function randomGenome() {
+	let genome = emptyGenome();
+
+  let zeroThruEight = () => Math.floor(Math.random() * 9);
+
+	for (let i=0; i<=8; i++) {
+		genome[i.toString()].action = zeroThruEight();
+		genome[i.toString()].weight = Math.random();
+	}
+	genome['0'].action = [zeroThruEight(),zeroThruEight(),0][Math.floor(Math.random()*3)];
+
+	// // random color
+	// var r = Math.round(255 * Math.random());
+	// var g = Math.round(255 * Math.random());
+	// var b = Math.round(255 * Math.random());
+	// var color = 'rgba(' + r + ',' + g + ',' + b + ',1)';
+
+	// console.log(genome);
+
+	return genome;
+
+  // return {
+  // 	0: {
+	// 		action: [zeroThruEight(),zeroThruEight(),0][Math.floor(Math.random()*3)],
+	// 		weight: Math.random()
+  // 	},
+  // 	1: {
+	// 		action: zeroThruEight(),
+	// 		weight: Math.random()
+  // 	},
+  // 	2: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	3: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	4: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	5: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	6: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	7: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  // 	8: {
+  // 		action: zeroThruEight(),
+  // 		weight: Math.random()
+  // 	},
+  //   color: 'red'
+  // }
+}
+
+function randomPosition(canvas, context, cellSize) {
+	// random position
+	let x;
+	let y;
+	do {
+		x = Math.floor(Math.random() * canvas.width / cellSize) * cellSize + (cellSize/2);
+		y = Math.floor(Math.random() * canvas.height / cellSize) * cellSize + (cellSize/2);
+	} while (context.getImageData(x, y, 1, 1).data[3] !== 0);
+
+	return {x:x,y:y};
+}
 
 
 // -------- example genome -------- //

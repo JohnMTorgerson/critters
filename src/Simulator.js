@@ -1,3 +1,4 @@
+import Critter from './Critter.js';
 
 // -------- Simulator class -------- //
 
@@ -5,14 +6,17 @@
 // holds simulation state such as play/pause and speed information
 // holds main array of critters
 export default class Simulator {
-	constructor(canvas, delay) {
+	constructor(canvas, opts) {
 		// private properties
 		this._paused = true;
 		this._interval; // will hold the setInterval object that runs the main step function
-		this._defaultDelay = delay; // default millisecond interval delay between steps
+		this._defaultDelay = opts.defaultDelay; // default millisecond interval delay between steps
 		this._delay = this._defaultDelay; // set interval to default interval delay
-		this._maxDelay = this._defaultDelay * 16; // max interval delay
+		this._maxDelay = this._defaultDelay * 64; // max interval delay
 		this._minDelay = this._defaultDelay / 4; // min interval delay
+		this.cellSize = opts.cellSize; // size of each creature/cell in the grid
+	  this.numCritters = opts.numCritters; // the number of critters to make
+		this.opts = opts;
 
 		// public properties
 		this.canvas = canvas;
@@ -36,14 +40,15 @@ export default class Simulator {
 	// getter for the _delay property
 	get delay () { return this._delay; }
 
-	// getter for the number of critters
-	get numCritters () { return this.critters.length; }
+	// // getter for the number of critters
+	// get numCritters () { return this.critters.length; }
 
 	// play the simulation
 	startInterval() {
 		clearInterval(this._interval);
 		var that = this;
-		this._interval = setInterval(function() {runStep.call(that);},this._delay); // call runStep every this.delay milliseconds
+		this._interval = setInterval(() => {runStep.call(that)},this._delay); // call runStep every this._delay milliseconds
+		this._displayValues();
 		this._paused = false;
 	}
 
@@ -59,26 +64,59 @@ export default class Simulator {
 
 	slower() {
 		if (this._delay < this._maxDelay) {
-			this.delay *= 2;
+			this._delay *= 2;
 		}
 		if (this._delay == 0) { // if the delay is 0, set delay to min delay
-			this.delay = this._minDelay;
+			this._delay = this._minDelay;
 		}
+		// if currently playing, we'll need to reset the interval with the new delay value
+		if (!this._paused) this.startInterval();
+		this._displayValues();
 	}
 
 	faster() {
 		if (this._delay > this._minDelay) {
-			this.delay /= 2;
+			this._delay /= 2;
 		} else {
-			this.delay = 0; // after that we just set the delay to 0
+			this._delay = 0; // after that we just set the delay to 0
 		}
+		// if currently playing, we'll need to reset the interval with the new delay value
+		if (!this._paused) this.startInterval();
+		this._displayValues();
 	}
 
 	defaultSpeed() {
-		this.delay = this._defaultDelay;
+		this._delay = this._defaultDelay;
+		// if currently playing, we'll need to reset the interval with the new delay value
+		if (!this._paused) this.startInterval();
+		this._displayValues();
 	}
 
+	_displayValues() {
+		var speed = this._delay != 0 ? this._defaultDelay / this._delay + 'x' : 'MAX';
+		document.getElementById('speed').innerHTML = 'Speed: ' + speed + ' (' + this._delay + 'ms delay)';
+		document.getElementById('numCritters').innerHTML = ' Critters: ' + this.numCritters;
+	}
+
+
 	// ******** Other methods ******** //
+
+	// todo: probably move this to game.js
+	populateInitial() {
+		// create critter population
+		for (let i=0; i<this.numCritters; i++) {
+			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
+			let critter = new Critter(this.canvas, this.opts);
+			critter.draw(); // must draw as we go, because each new critter picks an empty cell based on testing the actual canvas for occupied pixels
+			this.critters.push(critter);
+		}
+
+		// draw initial position of all the bodies
+		// for (var i=0; i<this.critters.length; i++) {
+		// 	this.critters[i].draw();
+		// }
+	}
+
 }
 
 // -------- Game Logic -------- //
@@ -145,8 +183,4 @@ function runStep() {
 	}
 
 //	console.log(time.displayPoints());
-
-	var speed = this.delay != 0 ? this._defaultDelay / this.delay + 'x' : 'MAX';
-	document.getElementById('speed').innerHTML = 'Speed: ' + speed;
-	document.getElementById('numCritters').innerHTML = ' Critters: ' + this.numCritters;
 }

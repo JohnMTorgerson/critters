@@ -2,11 +2,25 @@ import Simulator from './Simulator.js';
 import Critter from './Critter.js';
 
 // declare the global Simulator object
-var sim;
+let sim;
+let canvas;
+let opts = {
+	cellSize : 5, // size of each creature/cell in the grid
+  numCritters : 2000,
+	defaultDelay : 20, // millisecond delay between each step in the simulator
+	actionMutationRate : 0.01, // mutation rate per gene (how often the action mutates)
+	weightMutationAmount : 0.001 // mutation amount added or subtracted to the weight of each gene every reproduction
+}
 
-function initiate() {
+async function main() {
+	await runGeneration();
+	let survivors = runSelection();
+	let offspring = runReproduction(survivors);
+}
+
+function runGeneration(autoplay) {
 	// get canvas element
-	let canvas = document.getElementById("theCanvas");
+	canvas = document.getElementById("theCanvas");
   let context = canvas.getContext("2d");
 
   // draw some obstacles
@@ -15,12 +29,8 @@ function initiate() {
   context.fillStyle = 'black';
   context.fill();
 
-  let cellSize = 5;
-  let numCritters = 1000;
-	let defaultDelay = 30; // millisecond delay between each step in the simulator
-
 	// instantiate global Simulator object
-	sim = new Simulator(canvas, defaultDelay);
+	sim = new Simulator(canvas, opts);
 
 	// set keyboard events
 	window.addEventListener("keydown", function(e) {
@@ -53,78 +63,59 @@ function initiate() {
 		}
 	}, false);
 
-  // create critter population
-	for (var i=0; i<numCritters; i++) {
-    // random position
-    let x;
-    let y;
-    do {
-      x = Math.floor(Math.random() * canvas.width / cellSize) * cellSize + (cellSize/2);
-      y = Math.floor(Math.random() * canvas.height / cellSize) * cellSize + (cellSize/2);
-    } while (context.getImageData(x, y, 1, 1).data[3] !== 0);
+	// create initial population (with random genomes)
+	sim.populateInitial();
 
-    // // random color
-		// var r = Math.round(255 * Math.random());
-		// var g = Math.round(255 * Math.random());
-		// var b = Math.round(255 * Math.random());
-		// var color = 'rgba(' + r + ',' + g + ',' + b + ',1)';
-    let genome = getRandomGenome();
-
-		sim.critters.push(new Critter(canvas, cellSize, x, y, genome));
-	}
-
-
-	// draw initial position of all the bodies
-	for (var i=0; i<sim.critters.length; i++) {
-		sim.critters[i].draw();
-	}
-
+	// if autoplay is true, play the simulation
+	if (autoplay) sim.togglePause();
 }
 
-function getRandomGenome() {
-  let zeroThruEight = () => Math.floor(Math.random() * 9);
-
-  return {
-  	0: {
-			action: [zeroThruEight(),zeroThruEight(),0][Math.floor(Math.random()*3)],
-			weight: Math.random()
-  	},
-  	1: {
-			action: zeroThruEight(),
-			weight: Math.random()
-  	},
-  	2: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	3: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	4: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	5: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	6: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	7: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-  	8: {
-  		action: zeroThruEight(),
-  		weight: Math.random()
-  	},
-    color: 'red'
-  }
+// kill the critters that didn't meet the selection criterion
+function runSelection() {
+	return sim.critters.filter(critter => critter.position.x > canvas.width / 2);
 }
+
+// bug: currently, critters will overlap, since they aren't being drawn as they are being created
+function runReproduction(oldGen) {
+	let newGen = [];
+
+	// console.log(sim.critters);
+
+	// loop through all the critters, pairing them up as many times as necessary
+	// to fill up the number of critters we want
+	// (since each pairing only produces one child, we loop around as many times as needed)
+	while (newGen.length < opts.numCritters) {
+		// loop through all the critters, pairing them up randomly to create a single child
+		let temp = [...oldGen]; // this single-layer "deep" copy is fine, since we're not altering the critters
+		for (let i=0, halfLen = Math.floor(temp.length / 2); i < halfLen; i++) {
+			let mom = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
+			let dad = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
+
+			let kid = new Critter(canvas, opts, {
+				genome : mom.fuck(dad)
+			});
+
+			newGen.push(kid);
+
+			// console.log('mom, dad, kid:');
+			// console.log(mom.genome);
+			// console.log(dad.genome);
+			// console.log(kid.genome);
+		}
+	}
+
+	console.log('newGen length: ' + newGen.length);
+
+	// now newGen.length should be >= the number of critters we want,
+	// so trim it down to exactly the number we want
+	newGen.splice(opts.numCritters);
+
+	console.log('newGen length after trim: ' + newGen.length);
+
+	return newGen;
+}
+
 
 window.onload = function() {
-  initiate();
+	main();
 };
