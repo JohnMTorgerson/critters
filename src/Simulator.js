@@ -6,7 +6,7 @@ import Critter from './Critter.js';
 // holds simulation state such as play/pause and speed information
 // holds main array of critters
 export default class Simulator {
-	constructor(canvas, opts) {
+	constructor(canvas, opts, cb, critters) {
 		// private properties
 		this._paused = true;
 		this._interval; // will hold the setInterval object that runs the main step function
@@ -16,12 +16,21 @@ export default class Simulator {
 		this._minDelay = this._defaultDelay / 4; // min interval delay
 		this.cellSize = opts.cellSize; // size of each creature/cell in the grid
 	  this.numCritters = opts.numCritters; // the number of critters to make
+		this.numSteps = opts.numSteps;
+		this.step = 0;
 		this.opts = opts;
+		this.cb = cb; // callback function to be run when the generation is over
 
 		// public properties
 		this.canvas = canvas;
 		this.context = this.canvas.getContext("2d");
-		this.critters = []; // the master array of all critters in the simulation
+
+		// the master array of all critters in the simulation
+		if (Array.isArray(critters)) {
+			this.critters = critters;
+		} else {
+			this.critters = [];
+		}
 	}
 
 	// ******** Control methods ******** //
@@ -117,6 +126,11 @@ export default class Simulator {
 		// }
 	}
 
+	stopSim() {
+		clearInterval(this._interval);
+		this.cb();
+	}
+
 }
 
 // -------- Game Logic -------- //
@@ -172,6 +186,14 @@ function runStep() {
 	// 					return JSON.stringify(this.getPoints());
 	// 				}
 	// 			};
+
+	this.step++;
+	// console.log(this.step);
+
+	if (this.step >= this.numSteps) {
+		this.stopSim();
+		return;
+	}
 
 	// calculates step for each critter
 	for (var i=0, len=this.critters.length; i<len; i++) {
