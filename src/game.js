@@ -8,19 +8,20 @@ let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
   numCritters : 500, // number of critters in each generation
-	numSteps : 100, // number of simulator steps each generation will last
-	defaultDelay : 20, // millisecond delay between each step in the simulator
+	numSteps : 150, // number of simulator steps each generation will last
+	defaultDelay : 0, // millisecond delay between each step in the simulator
 	actionMutationRate : 0.01, // mutation rate per gene (how often the action mutates)
 	weightMutationAmount : 0.001 // mutation amount added or subtracted to the weight of each gene every reproduction
 }
 
 function main(critters) {
-	console.log('main');
+	// console.log('main');
 	runGeneration(true, () => {
 		let survivors = runSelection();
+		console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
 		let offspring = runReproduction(survivors);
 		generation++;
-		console.log('Selected and reproduced!');
+		// console.log('Selected and reproduced!');
 
 		// run another generation with the offspring
 		main(offspring);
@@ -39,10 +40,10 @@ function runGeneration(autoplay, cb, critters) {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
   // draw some obstacles
-  // context.beginPath();
-  // context.rect(250, 50, 15, 400);
-  // context.fillStyle = 'black';
-  // context.fill();
+  context.beginPath();
+  context.rect(165, 165, 165, 165);
+  context.fillStyle = 'gray';
+  context.fill();
 
 	// instantiate global Simulator object
 	sim = new Simulator(canvas, opts, cb, critters);
@@ -63,7 +64,7 @@ function runGeneration(autoplay, cb, critters) {
 
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
-	return sim.critters.filter(critter => critter.position.x > canvas.width / 2);
+	return sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3);
 }
 
 // bug: currently, critters will overlap, since they aren't being drawn as they are being created
@@ -95,13 +96,13 @@ function runReproduction(oldGen) {
 		}
 	}
 
-	console.log('newGen length: ' + newGen.length);
+	// console.log('newGen length: ' + newGen.length);
 
 	// now newGen.length should be >= the number of critters we want,
 	// so trim it down to exactly the number we want
 	newGen.splice(opts.numCritters);
 
-	console.log('newGen length after trim: ' + newGen.length);
+	// console.log('newGen length after trim: ' + newGen.length);
 
 	return newGen;
 }

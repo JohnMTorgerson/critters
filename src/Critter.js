@@ -74,6 +74,11 @@ export default class Critter {
     let x = this.position.x + translation.x;
     let y = this.position.y + translation.y;
 
+		// if the pixel is out of bounds, return true
+		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
+			return true;
+		}
+
     // check if the pixel is not transparent, and if it isn't, return true
     let pixelData = this.context.getImageData(x, y, 1, 1).data;
     return pixelData[3] !== 0;

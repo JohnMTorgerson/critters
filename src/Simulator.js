@@ -63,11 +63,18 @@ export default class Simulator {
 
 	// toggle play/pause
 	togglePause() {
+		// let el = document.getElementById('genome');
+
 		if (this._paused) {
 			this.startInterval(); // play
+			// el.innerHTML = '';
 		} else {
 			clearInterval(this._interval); // pause
 			this._paused = true;
+
+			// display genome of a critter
+			// el.innerHTML = JSON.stringify(this.critters[0].genome);
+			console.log(this.critters[0].genome);
 		}
 	}
 
