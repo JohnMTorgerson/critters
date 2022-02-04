@@ -40,20 +40,21 @@ function runGeneration(autoplay, cb, critters) {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
   // draw some obstacles
-  // context.beginPath();
-  // context.rect(165, 165, 165, 165);
-  // context.fillStyle = 'gray';
-  // context.fill();
-	//
-	// context.beginPath();
-	// context.rect(300, 100, 100, 100);
-	// context.fillStyle = 'gray';
-	// context.fill();
-	//
-	// context.beginPath();
-	// context.rect(100, 300, 100, 100);
-	// context.fillStyle = 'gray';
-	// context.fill();
+
+  context.beginPath();
+  context.rect(165, 165, 165, 165);
+  context.fillStyle = 'gray';
+  context.fill();
+
+	context.beginPath();
+	context.rect(300, 100, 100, 100);
+	context.fillStyle = 'gray';
+	context.fill();
+
+	context.beginPath();
+	context.rect(100, 300, 100, 100);
+	context.fillStyle = 'gray';
+	context.fill();
 
 
 
@@ -77,9 +78,14 @@ function runGeneration(autoplay, cb, critters) {
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
 	let filtered = [];
+	// SE nonant
 	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	// NW nonant
 	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
+	// NE nonant
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y < canvas.height / 3));
 
+	// center nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
 	// filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
 

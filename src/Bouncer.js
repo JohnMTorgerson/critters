@@ -69,11 +69,14 @@ export default class Bouncer extends Critter {
 			genome[i.toString()].weight = Math.min(1, genome[i.toString()].weight);
 			genome[i.toString()].weight = Math.max(0, genome[i.toString()].weight);
 			// then, mutate the action (if chance dictates, per the mutation rate)
-			if (Math.floor(Math.random() / this.params.actionMutationRate) == 0) {
+			if (Math.floor(Math.random() / this.gameOpts.actionMutationRate) == 0) {
 				// if we're here, then we mutate the action to a random value
 				genome[i.toString()].action = Math.floor(Math.random() * 9);
+				console.log('MUTATION!');
 			}
 		}
+
+		genome.color = this._color(genome);
 
 		return new Bouncer(this.canvas, this.gameOpts, {
 			genome : genome
@@ -164,7 +167,7 @@ export default class Bouncer extends Critter {
 				action: null,
 				weight: null
 	  	},
-	    color: 'red'
+	    color: 'white'
 	  }
 	}
 
@@ -185,6 +188,8 @@ export default class Bouncer extends Critter {
 		// var g = Math.round(255 * Math.random());
 		// var b = Math.round(255 * Math.random());
 		// var color = 'rgba(' + r + ',' + g + ',' + b + ',1)';
+
+		genome.color = this._color(genome);
 
 		// console.log(genome);
 
@@ -229,6 +234,41 @@ export default class Bouncer extends Critter {
 	  // 	},
 	  //   color: 'red'
 	  // }
+	}
+
+	_color(genome) {
+		let color;
+		switch(genome['0'].action) {
+			case 0:
+				color = 'red';
+				break;
+			case 1:
+				color = 'black';
+				break;
+			case 2:
+				color = '#3333FF';
+				break;
+			case 3:
+				color = 'yellow';
+				break;
+			case 4:
+				color = 'purple';
+				break;
+			case 5:
+				color = 'white';
+				break;
+			case 6:
+				color = '#000077';
+				break;
+			case 7:
+				color = '#FFA07A';
+				break;
+			case 8:
+				color = '	#A67B5B';
+				break;
+		}
+
+		return color;
 	}
 
 	// -------- example genome -------- //

@@ -1,0 +1,12 @@
+body {
+  background-color: #222222;
+  color: #CCCCCC;
+}
+
+#genome {
+  position:absolute;
+  top: 50px;
+  right: 50px;
+  width: 450px;
+  font-size: 16pt;
+}
