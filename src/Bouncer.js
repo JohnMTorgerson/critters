@@ -22,7 +22,7 @@ export default class Bouncer extends Critter {
 			// for the rest, if the input sensor controlled by this gene is activated
 			// (meaning that there is something in the way in that direction),
 			// then test whether that gene's action outweighs the others
-			if (i == 0 || this.sense(i)) {
+			if (i == 0 || this._sense(i)) {
 				// if (gene.weight > heaviestWeight) {
 				// 	heaviestWeight = gene.weight;
 				// 	action = gene.action;
@@ -41,31 +41,13 @@ export default class Bouncer extends Critter {
     let newX = this.position.x + move.x;
     let newY = this.position.y + move.y;
 
-    if (!this.sense(action) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
+    if (!this._sense(action) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
       this.position.x = newX;
       this.position.y = newY;
     }
 
 		// then draw the critter
 		this.draw();
-	}
-
-	sense(direction) {
-    if (typeof direction === 'string') return false;
-
-    // find the center pixel in the cell to test
-    let translation = this._getTranslation(direction);
-    let x = this.position.x + translation.x;
-    let y = this.position.y + translation.y;
-
-		// if the pixel is out of bounds, return true
-		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
-			return true;
-		}
-
-    // check if the pixel is not transparent, and if it isn't, return true
-    let pixelData = this.context.getImageData(x, y, 1, 1).data;
-    return pixelData[3] !== 0;
 	}
 
 	// reproduction method,
@@ -98,8 +80,25 @@ export default class Bouncer extends Critter {
 		});
 	}
 
-
 	// -------- private utility functions -------- //
+
+	_sense(direction) {
+		if (typeof direction === 'string') return false;
+
+		// find the center pixel in the cell to test
+		let translation = this._getTranslation(direction);
+		let x = this.position.x + translation.x;
+		let y = this.position.y + translation.y;
+
+		// if the pixel is out of bounds, return true
+		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
+			return true;
+		}
+
+		// check if the pixel is not transparent, and if it isn't, return true
+		let pixelData = this.context.getImageData(x, y, 1, 1).data;
+		return pixelData[3] !== 0;
+	}
 
 	// given an action (an integer from 0 to 8)
 	// get the corresponding number of pixels to move by
@@ -126,7 +125,7 @@ export default class Bouncer extends Critter {
 		return {x:x,y:y};
 	}
 
-	// create a random genome
+	// create an empty genome
 	_emptyGenome() {
 	  return {
 	  	0: {

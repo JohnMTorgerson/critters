@@ -27,10 +27,6 @@ export default class Critter {
 	move() {
 	}
 
-	// sense method, currently not called from outside the class
-	sense() {
-	}
-
 	// reproduction method,
 	// should return an offspring critter
 	fuck() {
@@ -63,15 +59,6 @@ export default class Critter {
 	}
 
 	// -------- private utility functions -------- //
-
-
-	// create an empty genome
-	_emptyGenome() {
-	}
-
-	// create a random genome
-	_randomGenome() {
-	}
 
 	_randomPosition(canvas, context, cellSize) {
 		// random position
