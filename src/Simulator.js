@@ -1,4 +1,5 @@
 import Critter from './Critter.js';
+import Bouncer from './Bouncer.js';
 
 // -------- Simulator class -------- //
 
@@ -122,7 +123,7 @@ export default class Simulator {
 		// create critter population
 		for (let i=0; i<this.numCritters; i++) {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
-			let critter = new Critter(this.canvas, this.opts);
+			let critter = new Bouncer(this.canvas, this.opts);
 			critter.draw(); // must draw as we go, because each new critter picks an empty cell based on testing the actual canvas for occupied pixels
 			this.critters.push(critter);
 		}

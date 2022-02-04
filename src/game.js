@@ -40,10 +40,22 @@ function runGeneration(autoplay, cb, critters) {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
   // draw some obstacles
-  context.beginPath();
-  context.rect(165, 165, 165, 165);
-  context.fillStyle = 'gray';
-  context.fill();
+  // context.beginPath();
+  // context.rect(165, 165, 165, 165);
+  // context.fillStyle = 'gray';
+  // context.fill();
+	//
+	// context.beginPath();
+	// context.rect(300, 100, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
+	//
+	// context.beginPath();
+	// context.rect(100, 300, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
+
 
 	// instantiate global Simulator object
 	sim = new Simulator(canvas, opts, cb, critters);
@@ -64,7 +76,14 @@ function runGeneration(autoplay, cb, critters) {
 
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
-	return sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3);
+	let filtered = [];
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
+
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
+	// filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
+
+	return filtered;
 }
 
 // bug: currently, critters will overlap, since they aren't being drawn as they are being created
@@ -83,9 +102,11 @@ function runReproduction(oldGen) {
 			let mom = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
 			let dad = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
 
-			let kid = new Critter(canvas, opts, {
-				genome : mom.fuck(dad)
-			});
+			// let kid = new Critter(canvas, opts, {
+			// 	genome : mom.fuck(dad)
+			// });
+
+			let kid = mom.fuck(dad);
 
 			newGen.push(kid);
 
