@@ -4,10 +4,12 @@ const path = require('path')
 async function createWindow () {
   const win = new BrowserWindow({
     width: 1200,
-    height: 800
-    // webPreferences: {
-    //   preload: path.join(__dirname, 'preload.js')
-    // }
+    height: 800,
+    webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+        // preload: path.join(__dirname, 'preload.js')
+    }
   })
 
   win.webContents.openDevTools();
