@@ -17,8 +17,8 @@ export default class Critter {
 		if (typeof params.genome === "object") {
 			this.genome = params.genome;
 		} else {
-			// if genome is not passed, create a random one
-			this.genome = this._randomGenome();
+			// if genome is not passed, create a blank object
+			this.genome = {};
 		}
 	}
 

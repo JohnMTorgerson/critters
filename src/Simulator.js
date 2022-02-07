@@ -1,5 +1,6 @@
 import Critter from './Critter.js';
 import Bouncer from './Bouncer.js';
+import Thinker from './Thinker.js';
 
 // -------- Simulator class -------- //
 
@@ -13,8 +14,8 @@ export default class Simulator {
 		this._interval; // will hold the setInterval object that runs the main step function
 		this._defaultDelay = opts.defaultDelay; // default millisecond interval delay between steps
 		this._delay = this._defaultDelay; // set interval to default interval delay
-		this._maxDelay = this._defaultDelay * 64; // max interval delay
-		this._minDelay = this._defaultDelay / 4; // min interval delay
+		this._maxDelay = this._defaultDelay * 64 || 1600; // max interval delay
+		this._minDelay = this._defaultDelay / 4 || 50; // min interval delay
 		this.cellSize = opts.cellSize; // size of each creature/cell in the grid
 	  this.numCritters = opts.numCritters; // the number of critters to make
 		this.numSteps = opts.numSteps;
@@ -75,7 +76,7 @@ export default class Simulator {
 
 			// display genome of a critter
 			// el.innerHTML = JSON.stringify(this.critters[0].genome);
-			console.log(this.critters[0].genome);
+			// console.log(this.critters[0].genome);
 		}
 	}
 
@@ -110,7 +111,7 @@ export default class Simulator {
 	}
 
 	_displayValues() {
-		var speed = this._delay != 0 ? this._defaultDelay / this._delay + 'x' : 'MAX';
+		var speed = this._delay != 0 ? (this._defaultDelay || (this._minDelay/2)) / this._delay + 'x' : 'MAX';
 		document.getElementById('speed').innerHTML = 'Speed: ' + speed + ' (' + this._delay + 'ms delay)';
 		document.getElementById('numCritters').innerHTML = ' Critters: ' + this.numCritters;
 	}
@@ -123,7 +124,7 @@ export default class Simulator {
 		// create critter population
 		for (let i=0; i<this.numCritters; i++) {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
-			let critter = new Bouncer(this.canvas, this.opts);
+			let critter = new Thinker(this.canvas, this.opts);
 			critter.draw(); // must draw as we go, because each new critter picks an empty cell based on testing the actual canvas for occupied pixels
 			this.critters.push(critter);
 		}
@@ -195,9 +196,6 @@ function runStep() {
 	// 				}
 	// 			};
 
-	this.step++;
-	// console.log(this.step);
-
 	if (this.step >= this.numSteps) {
 		this.stopSim();
 		return;
@@ -211,6 +209,9 @@ function runStep() {
 			critter.move();
 		}
 	}
+
+	this.step++;
+	// console.log(this.step);
 
 //	console.log(time.displayPoints());
 }

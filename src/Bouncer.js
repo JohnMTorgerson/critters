@@ -4,6 +4,10 @@ import Critter from './Critter.js'
 export default class Bouncer extends Critter {
 	constructor(canvas, gameOpts, params) {
 		super(canvas, gameOpts, params)
+
+		if (Object.keys(this.genome).length === 0) {
+			this.genome = this._randomGenome();
+		}
 	}
 
 	// method to move the critter's position
@@ -55,17 +59,17 @@ export default class Bouncer extends Critter {
 	// returns an offspring critter with mixed, mutated genome
 	fuck(spouse) {
 		let genome = this._emptyGenome();
-		let rand = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
+		let coinflip = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
 
 		for (let i=0; i<=8; i++) {
 			// -- parent recombination
-			let parentGenome = rand() == 0 ? this.genome : spouse.genome;
+			let parentGenome = coinflip() == 0 ? this.genome : spouse.genome;
 			genome[i.toString()].action = parentGenome[i.toString()].action;
 			genome[i.toString()].weight = parentGenome[i.toString()].weight;
 
 			// -- mutation
 			// first, mutate the weight a tiny bit
-			genome[i.toString()].weight += 2 * (rand() - 0.5) * this.gameOpts.weightMutationAmount;
+			genome[i.toString()].weight += 2 * (coinflip() - 0.5) * this.gameOpts.weightMutationAmount;
 			genome[i.toString()].weight = Math.min(1, genome[i.toString()].weight);
 			genome[i.toString()].weight = Math.max(0, genome[i.toString()].weight);
 			// then, mutate the action (if chance dictates, per the mutation rate)

@@ -15,9 +15,18 @@ let opts = {
 }
 
 function main(critters) {
+	// this is simply to keep the user-set speed between generations
+	let delay;
+	if (sim) delay = sim._delay;
+
 	// console.log('main');
 	runGeneration(true, () => {
 		let survivors = runSelection();
+		if (survivors.length === 0) {
+			window.alert('EXTINCTION');
+			return;
+		}
+
 		console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
 		let offspring = runReproduction(survivors);
 		generation++;
@@ -25,10 +34,10 @@ function main(critters) {
 
 		// run another generation with the offspring
 		main(offspring);
-	}, critters);
+	}, critters, delay);
 }
 
-function runGeneration(autoplay, cb, critters) {
+function runGeneration(autoplay, cb, critters, delay) {
 	document.getElementById('generation').innerHTML = 'Generation ' + generation;
 
 	// get canvas element
@@ -60,6 +69,7 @@ function runGeneration(autoplay, cb, critters) {
 
 	// instantiate global Simulator object
 	sim = new Simulator(canvas, opts, cb, critters);
+	if (typeof delay !== "undefined")	sim._delay = delay; // keep the user's speed setting from the previous generation, if applicable
 
 	if (typeof critters === "undefined") {
 		// if we weren't passed a population of critters,
