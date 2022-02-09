@@ -7,11 +7,11 @@ let canvas;
 let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
-  numCritters : 500, // number of critters in each generation
+  numCritters : 2000, // number of critters in each generation
 	numSteps : 150, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
-	actionMutationRate : 0.01, // mutation rate per gene (how often the action mutates)
-	weightMutationAmount : 0.001 // mutation amount added or subtracted to the weight of each gene every reproduction
+	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
+	weightMutationAmount : 0.1 // mutation amount added or subtracted to the weight of each gene every reproduction
 }
 
 function main(critters) {
@@ -22,7 +22,7 @@ function main(critters) {
 	// console.log('main');
 	runGeneration(true, () => {
 		let survivors = runSelection();
-		if (survivors.length === 0) {
+		if (survivors.length < 2) {
 			window.alert('EXTINCTION');
 			return;
 		}
@@ -50,21 +50,32 @@ function runGeneration(autoplay, cb, critters, delay) {
 
   // draw some obstacles
 
-  context.beginPath();
-  context.rect(165, 165, 165, 165);
-  context.fillStyle = 'gray';
-  context.fill();
+  // context.beginPath();
+  // context.rect(165, 165, 165, 165);
+  // context.fillStyle = 'gray';
+  // context.fill();
+	//
+	// context.beginPath();
+	// context.rect(300, 100, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
+	//
+	// context.beginPath();
+	// context.rect(100, 300, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
 
-	context.beginPath();
-	context.rect(300, 100, 100, 100);
-	context.fillStyle = 'gray';
-	context.fill();
+	// context.beginPath();
+  // context.rect(50, 50, 400, 5);
+  // context.fillStyle = 'gray';
+  // context.fill();
+	//
+	// context.beginPath();
+	// context.rect(50, 50, 5, 400);
+	// context.fillStyle = 'gray';
+	// context.fill();
 
-	context.beginPath();
-	context.rect(100, 300, 100, 100);
-	context.fillStyle = 'gray';
-	context.fill();
-
+	context.fillStyle = 'red';
 
 
 	// instantiate global Simulator object
@@ -88,16 +99,21 @@ function runGeneration(autoplay, cb, critters, delay) {
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
 	let filtered = [];
+	// no filter
+	// filtered = sim.critters;
+
 	// SE nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
 	// NW nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
 	// NE nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y < canvas.height / 3));
 
 	// center nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
-	// filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
+	filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
+
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
 	return filtered;
 }

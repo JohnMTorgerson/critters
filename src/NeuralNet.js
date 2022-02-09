@@ -37,7 +37,7 @@ export default class NeuralNet {
 		for(let i=0; i<this.numLayers; i++) {
 			let layer = {
 				values: math.zeros(numNeurons[i]), //math.matrix(Array.from({length: numNeurons[i]}, () => Math.random())), // 1-d matrix with random values for each neuron in this layer
-				weights: math.matrix((() => {
+				weights: (() => {
 					// create a 2-d matrix with the number of columns corresponding to the number of neurons in the following layers
 					// and the number of rows corresponding to the number of neurons in this layer;
 					// fill with random values, representing the weights of the connections between layers for each neuron
@@ -46,7 +46,7 @@ export default class NeuralNet {
 						matrix.push(Array.from({length: numNeurons[i+1]}, () => 2 * Math.random() - 1 ));
 					}
 					return matrix;
-				})())
+				})()
 			}
 			this.network.push(layer);
 		}
@@ -68,7 +68,7 @@ export default class NeuralNet {
 			let unnormalized = math.multiply(this.network[i].values, this.network[i].weights);
 			// then normalize the values
 			let normalized = unnormalized.map((value, index, matrix) => {
-				return Math.tanh(value);
+				return Math.ceil(Math.tanh(value)); // normalize to within -1 and 1, and then convert to discrete values, either 0 or 1
 			});
 			// assign the normalized values to the next layer
 			this.network[i+1].values = normalized;
@@ -103,16 +103,22 @@ export default class NeuralNet {
 		return null;
 	}
 
-	// a method to change any individual weight between two neurons
-	// layer tells us which layer to work on
-	// index should be a two-element array to address a cell in that layer's weight matrix
-	// (e.g. [0,4] would address the weight connecting the first neuron in this layer to the 5th neuron in the next layer)
-	// value is the value to change the weight to
-	setWeight(layer, index, value) {
-		// check if the index exists in this layer
-		// check if the value is in bounds (-1 - 1)
-		// if so, change the value
-	}
-
-
+	// // a method to change any individual weight between two neurons
+	// // layer tells us which layer to work on
+	// // index should be a two-element array to address a cell in that layer's weight matrix
+	// // (e.g. [0,4] would address the weight connecting the first neuron in this layer to the 5th neuron in the next layer)
+	// // value is the value to change the weight to
+	// setWeight(layer, index, value) {
+	// 	// check if the index exists in this layer
+	// 	// check if the value is in bounds (-1 - 1)
+	// 	// if so, change the value
+	// 	if (this.getWeight(layer, index) && value >= -1 && value < 1) {
+	// 		this.network[layer].subset(math.index(index), value);
+	// 	}
+	// }
+	//
+	// // get an individual weight, given a layer and a two-dimensional index (e.g. [1,3])
+	// getWeight(layer, index) {
+	// 	return this.network[layer].weights.subset(math.index(index));
+	// }
 }

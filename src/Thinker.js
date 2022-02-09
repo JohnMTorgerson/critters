@@ -22,16 +22,18 @@ export default class Thinker extends Critter {
 
 		// gather the sensory input
 		let senses = [];
-		for (let i=0, len=this.brain.inputNeurons - this.genome.internalParams.length; i<len; i++) {
+		for (let i=0, len=this.brain.inputNeurons - Object.keys(this.genome.internalParams).length; i<len; i++) {
 			senses.push(this._sense(i));
 		}
-		senses = senses.concat(this.genome.internalParams);
+		if (this.genome.internalParams.x) this.genome.internalParams.x = this.position.x / this.canvas.width * 2 - 1;
+		if (this.genome.internalParams.y) this.genome.internalParams.y = this.position.y / this.canvas.height * 2 - 1;
+		senses = senses.concat(Object.values(this.genome.internalParams));
 		// console.log('senses: ' + senses);
 
 		// run neural network; will return the index of the winning output neuron
 		// currently, we're setting that up to correspond to an 'action',
 		// as used in the Bouncer class;
-		let action = this.brain.think(senses); // should be an integer 0-8, or null if no output neuron was chosen
+		let action = this.brain.think(senses) + 1; // should be an integer 0-8, or null if no output neuron was chosen
 		if (action == null) action = 0; // if no output neuron was chosen, we'll just stay in place
 		// console.log('winning move direction: ' + action);
 		let move = this._getTranslation(action);
@@ -54,8 +56,45 @@ export default class Thinker extends Critter {
 	// takes another critter to mate with as an argument
 	// returns an offspring critter with mixed, mutated genome
 	fuck(spouse) {
-		let genome = this._randomGenome();
+		let childGenome = this._randomGenome();
 		let coinflip = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
+
+		// recombination of neural network
+		childGenome.brain.network = childGenome.brain.network.map((layer, indexL) => {
+			layer.weights = layer.weights.map((neuron, indexN) => {
+				let parent = coinflip() === 0 ? this.brain : spouse.brain;
+				return parent.network[indexL].weights[indexN].map((weight) => {
+					// set to a completely random value every so often per the mutation rate
+					if (Math.random() < this.gameOpts.actionMutationRate) {
+						return Math.random() * 2 - 1;
+					}
+					// the rest of the time, adjust the weight up or down by a tiny amount
+					return weight * 1 + (this.gameOpts.weightMutationAmount * (2 * coinflip() - 1));
+				});
+
+				// let parentMatrix = parent.network[indexL].weights;
+				// parentMatrix.forEach((cell, indexC, matrix) => {
+				// 	console.log(indexC + ' ' + indexN);
+				// 	if (indexC[0] === indexN) {
+				// 		console.log('setting!');
+				// 		childGenome.brain.setWeight(indexL,indexC,parent.getWeight(indexL,indexC));
+				// 	}
+				// });
+			});
+			return layer;
+		});
+
+		// recombination of internal params
+		Object.keys(childGenome.internalParams).map((key, index) => {
+			let value = coinflip() === 0 ? this.genome.internalParams[key] : spouse.genome.internalParams[key];
+			childGenome.internalParams[key] = value;
+		});
+
+		// console.log('self, spouse, offspring:');
+		// console.log(this.brain.network);
+		// console.log(spouse.brain.network);
+		// console.log(childGenome.brain.network);
+
 
 		// create a new NeuralNet and use the setWeight method to pick between parent connections
 		// mutate those connections
@@ -80,7 +119,7 @@ export default class Thinker extends Critter {
 		// }
 
 		return new Thinker(this.canvas, this.gameOpts, {
-			genome : genome
+			genome : childGenome
 		});
 	}
 
@@ -142,7 +181,7 @@ export default class Thinker extends Critter {
 		// to a value or function contained within internalParams
 		return {
 			brain: null, // brain will contain an instance of a NeuralNet
-			internalParams: []
+			internalParams: {}
 		};
 	}
 
@@ -150,17 +189,22 @@ export default class Thinker extends Critter {
 	_randomGenome() {
 		let genome = this._emptyGenome();
 
-		genome.internalParams.push(Math.random()); // a random constant to motivate movement in the absence of sensory input
+		genome.internalParams = {
+			constant: 1,
+			x: 0,
+			y: 0
+		};
+		// genome.internalParams.push(Math.random()); // a random constant to motivate movement in the absence of sensory input
 		//genome.internalParams.push(...); // in the future we could implement some kind of oscillator here, perhaps
 
 		// currently we only use 8 sensory neurons, one for each adjacent cell (true or false, depending on if it is occupied)
 		// in the future, we could implement distance vision and color sensing,
 		// as potential examples of more sophisticated sensory input
 		genome.brain = new NeuralNet({
-				inputNeurons: 8 + genome.internalParams.length, // 0-7 are for sensing, the rest determined by the genome's internal params
+				inputNeurons: 8 + Object.keys(genome.internalParams).length, // 0-7 are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
-				hiddenNeurons: 10,
-				numHiddenLayers: 1
+				hiddenNeurons: 5,
+				numHiddenLayers: 2
 		});
 
 		// // random color

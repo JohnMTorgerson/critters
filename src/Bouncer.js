@@ -265,10 +265,10 @@ export default class Bouncer extends Critter {
 				color = '#000077';
 				break;
 			case 7:
-				color = '#FFA07A';
+				color = '#FF91A4';//'#FA8072';
 				break;
 			case 8:
-				color = '	#A67B5B';
+				color = '#805737';
 				break;
 		}
 
