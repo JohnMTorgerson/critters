@@ -3,10 +3,27 @@ body {
   color: #CCCCCC;
 }
 
+#simulator {
+  /* float:left; */
+}
+
 #genome {
   position:absolute;
   top: 50px;
   right: 50px;
   width: 450px;
   font-size: 16pt;
+}
+
+#inspector {
+  width:500px;
+  height:400px;
+  margin-left: 50px;
+  border: 1px dashed #AAAAAA;
+  /* float:right; */
+  /* position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%); */
+  /* background-color:red; */
 }

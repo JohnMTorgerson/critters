@@ -32,6 +32,18 @@ export default class Critter {
 	fuck() {
 	}
 
+	showInspector() {
+		// console.log('diagram!');
+		let inspectorHook = document.getElementById("inspector");
+		// create new element to display diagram
+		let inspectorCanvas = document.createElement("canvas");
+		inspectorCanvas.width = 500;
+		inspectorCanvas.height = 400;
+		inspectorHook.appendChild(inspectorCanvas);
+		// return canvas element
+		return inspectorCanvas;
+	}
+
 	draw(color) {
     // console.log('drawing!');
 		this.context.beginPath();

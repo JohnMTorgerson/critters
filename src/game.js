@@ -7,7 +7,7 @@ let canvas;
 let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
-  numCritters : 2000, // number of critters in each generation
+  numCritters : 500, // number of critters in each generation
 	numSteps : 150, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
@@ -91,6 +91,10 @@ function runGeneration(autoplay, cb, critters, delay) {
 	// set keyboard events
 	window.removeEventListener("keydown", addKeyboardEvents, false); // remove any old listeners
 	window.addEventListener("keydown", addKeyboardEvents, false);
+
+	// set mouse events
+	canvas.removeEventListener("click", addClickEvents, false); // remove any old listeners
+	canvas.addEventListener("click", addClickEvents, false);
 
 	// if autoplay is true, play the simulation
 	if (autoplay) sim.togglePause();
@@ -188,6 +192,11 @@ function addKeyboardEvents(e) {
 		// 	sim.showOffCanvas = !sim.showOffCanvas; // show/hide the coordinates of all offscreen bodies
 		// 	break;
 	}
+}
+
+function addClickEvents(e) {
+	let rect = e.currentTarget.getBoundingClientRect();
+	sim.click({x:e.clientX - rect.left, y:e.clientY - rect.top});
 }
 
 

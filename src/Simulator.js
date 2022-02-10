@@ -80,6 +80,10 @@ export default class Simulator {
 		}
 	}
 
+	pause() {
+		if (!this._paused) this.togglePause();
+	}
+
 	slower() {
 		if (this._delay < this._maxDelay) {
 			this._delay *= 2;
@@ -108,6 +112,31 @@ export default class Simulator {
 		// if currently playing, we'll need to reset the interval with the new delay value
 		if (!this._paused) this.startInterval();
 		this._displayValues();
+	}
+
+	// when a critter is clicked on, display a diagram of the critter's genome/brain
+	click(pos) {
+		this.pause();
+
+		console.log(`x: ${pos.x}, y:${pos.y}`);
+
+		// normalize the position to the center of the nearest cell
+		pos.x = Math.floor(pos.x / this.cellSize) * this.cellSize + (this.cellSize/2);
+		pos.y = Math.floor(pos.y / this.cellSize) * this.cellSize + (this.cellSize/2);
+
+		console.log(`x: ${pos.x}, y:${pos.y}`);
+
+		// find which critter, if any, has been clicked on
+		for (let critter of this.critters) {
+			if (critter.position.x === pos.x && critter.position.y === pos.y) {
+				// call that critter's diagram method
+				critter.showInspector();
+				// dim the other critters
+
+				return;
+			}
+		}
+		console.log('no critter here!');
 	}
 
 	_displayValues() {

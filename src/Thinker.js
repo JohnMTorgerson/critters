@@ -123,6 +123,24 @@ export default class Thinker extends Critter {
 		});
 	}
 
+	showInspector() {
+		let inspectorCanvas = super.showInspector();
+
+
+		let context = inspectorCanvas.getContext("2d");
+
+		// clear canvas
+		// context.clearRect(0, 0, canvas.width, canvas.height);
+
+		context.beginPath();
+		context.rect(165, 165, 165, 165);
+		context.fillStyle = 'gray';
+		context.fill();
+
+
+
+	}
+
 	// -------- private utility functions -------- //
 
 	// sense whether something is in an adjacent cell
