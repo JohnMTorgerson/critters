@@ -7,15 +7,19 @@
     <script type='module' src="game.js"></script>
   </head>
   <body>
-    <table><tr>
-    <td id="simulator">
-      <h1 id="generation"></h1>
-      <canvas id="theCanvas" width=500 height=500></canvas>
-      <div id="genome"></div>
-      <h2 id="speed"></h2>
-      <h2 id="numCritters"></h2>
-    </td>
-    <td id="inspector"></td>
-  </tr></table>
+    <div id="container">
+      <div id="title" class="griditem">
+        <h1 id="generation"></h1>
+      </div>
+      <div id="simulator" class="griditem">
+        <canvas id="theCanvas" width=500 height=500></canvas>
+      </div>
+      <div id="siminfo" class="griditem">
+        <div id="genome"></div>
+        <h2 id="speed"></h2>
+        <h2 id="numCritters"></h2>
+      </div>
+      <div id="inspector" class="griditem"></div>
+  </div>
   </body>
 </html>

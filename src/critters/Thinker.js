@@ -1,6 +1,7 @@
 // -------- Thinker class -------- //
 import Critter from './Critter.js'
-import NeuralNet from './NeuralNet.js';
+import NeuralNet from './helpers/NeuralNet.js';
+import MindReader from '../inspector/MindReader.js';
 
 export default class Thinker extends Critter {
 	constructor(canvas, gameOpts, params) {
@@ -126,18 +127,7 @@ export default class Thinker extends Critter {
 	showInspector() {
 		let inspectorCanvas = super.showInspector();
 
-
-		let context = inspectorCanvas.getContext("2d");
-
-		// clear canvas
-		// context.clearRect(0, 0, canvas.width, canvas.height);
-
-		context.beginPath();
-		context.rect(165, 165, 165, 165);
-		context.fillStyle = 'gray';
-		context.fill();
-
-
+		let mindReader = new MindReader(inspectorCanvas, this);
 
 	}
 

@@ -1,6 +1,6 @@
-import Critter from './Critter.js';
-import Bouncer from './Bouncer.js';
-import Thinker from './Thinker.js';
+import Critter from './critters/Critter.js';
+import Bouncer from './critters/Bouncer.js';
+import Thinker from './critters/Thinker.js';
 
 // -------- Simulator class -------- //
 
@@ -132,6 +132,11 @@ export default class Simulator {
 				// call that critter's diagram method
 				critter.showInspector();
 				// dim the other critters
+				for (let c of this.critters) {
+					if (c.position.x !== critter.position.x && c.position.y !== critter.position.y) {
+						c.dim();
+					}
+				}
 
 				return;
 			}

@@ -1,5 +1,5 @@
 import Simulator from './Simulator.js';
-import Critter from './Critter.js';
+import Critter from './critters/Critter.js';
 
 // declare the global Simulator object
 let sim;
@@ -50,10 +50,10 @@ function runGeneration(autoplay, cb, critters, delay) {
 
   // draw some obstacles
 
-  // context.beginPath();
-  // context.rect(165, 165, 165, 165);
-  // context.fillStyle = 'gray';
-  // context.fill();
+  context.beginPath();
+  context.rect(165, 165, 165, 165);
+  context.fillStyle = 'gray';
+  context.fill();
 	//
 	// context.beginPath();
 	// context.rect(300, 100, 100, 100);
@@ -107,16 +107,17 @@ function runSelection() {
 	// filtered = sim.critters;
 
 	// SE nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
 	// NW nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
 	// NE nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y < canvas.height / 3));
 
 	// center nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
-	filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
+	// filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
 
+	// left and top edges
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
 	return filtered;

@@ -38,7 +38,7 @@ export default class Critter {
 		// create new element to display diagram
 		let inspectorCanvas = document.createElement("canvas");
 		inspectorCanvas.width = 500;
-		inspectorCanvas.height = 400;
+		inspectorCanvas.height = 500;
 		inspectorHook.appendChild(inspectorCanvas);
 		// return canvas element
 		return inspectorCanvas;
@@ -58,6 +58,11 @@ export default class Critter {
 		// this.context.lineWidth = 0.5;
 		// this.context.strokeStyle = 'black';
 		// this.context.stroke();
+	}
+
+	dim() {
+		// figure out a way to dim the critter
+		// (will probably have to implement a persisten color property for the critter using rgba)
 	}
 
 	erase({x,y}) {
