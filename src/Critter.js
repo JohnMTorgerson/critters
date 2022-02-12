@@ -35,10 +35,11 @@ export default class Critter {
 	showInspector() {
 		// console.log('diagram!');
 		let inspectorHook = document.getElementById("inspector");
+		inspectorHook.innerHTML = '';
 		// create new element to display diagram
 		let inspectorCanvas = document.createElement("canvas");
 		inspectorCanvas.width = 500;
-		inspectorCanvas.height = 400;
+		inspectorCanvas.height = 700;
 		inspectorHook.appendChild(inspectorCanvas);
 		// return canvas element
 		return inspectorCanvas;

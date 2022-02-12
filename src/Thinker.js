@@ -128,14 +128,34 @@ export default class Thinker extends Critter {
 
 
 		let context = inspectorCanvas.getContext("2d");
+		for (let i=0; i<this.brain.network.length; i++) {
+			let thisLayer = this.brain.network[i];
+			let layerLength = thisLayer.weights.length;
+			let neurY = 100*(i+1);
+			console.log(thisLayer.values._data);
+			for (let j=0; j<layerLength; j++) {
+				let thisNeuron = thisLayer.weights[j];
+				let spacing = inspectorCanvas.width/(layerLength+1);
+				let neurX = spacing*(j+1);
+				console.log(thisLayer.values[j]);
+				context.beginPath();
+				context.arc(neurX, neurY, 15, 0, 2 * Math.PI, false);
+				context.closePath();
+		    context.strokeStyle = thisLayer.values._data[j] ? "green" : "white";
+				context.stroke();
+			}
+
+		}
+		// context.font = "30px Arial";
+		// context.fillText(`There are ${this.brain.inputNeurons} input neurons in this critter.`, 10, 50);
 
 		// clear canvas
 		// context.clearRect(0, 0, canvas.width, canvas.height);
 
-		context.beginPath();
-		context.rect(165, 165, 165, 165);
-		context.fillStyle = 'gray';
-		context.fill();
+		// context.beginPath();
+		// context.rect(165, 165, 165, 165);
+		// context.fillStyle = 'gray';
+		// context.fill();
 
 
 
