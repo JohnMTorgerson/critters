@@ -30,6 +30,10 @@ body {
   grid-row: 2;
 }
 
+#sim-canvas {
+  border: 1px solid gray;
+}
+
 #siminfo {
   grid-row: 3;
   justify-self: left;

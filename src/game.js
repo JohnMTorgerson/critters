@@ -41,7 +41,7 @@ function runGeneration(autoplay, cb, critters, delay) {
 	document.getElementById('generation').innerHTML = 'Generation ' + generation;
 
 	// get canvas element
-	canvas = document.getElementById("theCanvas");
+	canvas = document.getElementById("sim-canvas");
   let context = canvas.getContext("2d");
 
 	// clear event listeners
@@ -50,10 +50,10 @@ function runGeneration(autoplay, cb, critters, delay) {
 
   // draw some obstacles
 
-  context.beginPath();
-  context.rect(165, 165, 165, 165);
-  context.fillStyle = 'gray';
-  context.fill();
+  // context.beginPath();
+  // context.rect(165, 165, 165, 165);
+  // context.fillStyle = 'gray';
+  // context.fill();
 	//
 	// context.beginPath();
 	// context.rect(300, 100, 100, 100);
@@ -65,11 +65,23 @@ function runGeneration(autoplay, cb, critters, delay) {
 	// context.fillStyle = 'gray';
 	// context.fill();
 
+	context.beginPath();
+	context.rect(330, 100, 5, 235);
+	context.fillStyle = 'gray';
+	context.fill();
+
+	context.beginPath();
+	context.rect(100, 330, 235, 5);
+	context.fillStyle = 'gray';
+	context.fill();
+
+
+
 	// context.beginPath();
   // context.rect(50, 50, 400, 5);
   // context.fillStyle = 'gray';
   // context.fill();
-	//
+
 	// context.beginPath();
 	// context.rect(50, 50, 5, 400);
 	// context.fillStyle = 'gray';

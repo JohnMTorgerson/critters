@@ -21,15 +21,8 @@ export default class Thinker extends Critter {
 		// erase current position of critter
 		this.erase(this.position);
 
-		// gather the sensory input
-		let senses = [];
-		for (let i=0, len=this.brain.inputNeurons - Object.keys(this.genome.internalParams).length; i<len; i++) {
-			senses.push(this._sense(i));
-		}
-		if (this.genome.internalParams.x) this.genome.internalParams.x = this.position.x / this.canvas.width * 2 - 1;
-		if (this.genome.internalParams.y) this.genome.internalParams.y = this.position.y / this.canvas.height * 2 - 1;
-		senses = senses.concat(Object.values(this.genome.internalParams));
-		// console.log('senses: ' + senses);
+		// get sensory data
+		let senses = this.senseAll();
 
 		// run neural network; will return the index of the winning output neuron
 		// currently, we're setting that up to correspond to an 'action',
@@ -53,6 +46,24 @@ export default class Thinker extends Critter {
 		this.draw();
 	}
 
+	senseAll() {
+		// gather the sensory input
+		let senses = [];
+		for (let i=0, len=this.brain.inputNeurons - Object.keys(this.genome.internalParams).length; i<len; i++) {
+			// we pass i+1 because the sense function enumerates the neighboring cells as 1-8, not 0-7
+			senses.push(this._sense(i+1));
+		}
+		let x, y;
+		if (this.genome.internalParams.x) x = this.position.x / this.canvas.width * 2 - 1;
+		if (this.genome.internalParams.y) y = this.position.y / this.canvas.height * 2 - 1;
+		senses = senses.concat([this.genome.internalParams.constant,x,y]);
+		// console.log('------------------');
+		// console.log(`x:${this.position.x/this.cellSize + .5}, y:${this.position.y/this.cellSize + .5}`);
+		// console.log('senses: ' + senses);
+
+		return senses;
+	}
+
 	// reproduction method,
 	// takes another critter to mate with as an argument
 	// returns an offspring critter with mixed, mutated genome
@@ -70,7 +81,7 @@ export default class Thinker extends Critter {
 						return Math.random() * 2 - 1;
 					}
 					// the rest of the time, adjust the weight up or down by a tiny amount
-					return weight * 1 + (this.gameOpts.weightMutationAmount * (2 * coinflip() - 1));
+					return weight * (1 + this.gameOpts.weightMutationAmount * (2 * coinflip() - 1));
 				});
 
 				// let parentMatrix = parent.network[indexL].weights;
@@ -125,9 +136,9 @@ export default class Thinker extends Critter {
 	}
 
 	showInspector() {
-		let inspectorCanvas = super.showInspector();
+		let inspectorElement = super.showInspector();
 
-		let mindReader = new MindReader(inspectorCanvas, this);
+		let mindReader = new MindReader(inspectorElement, this);
 
 	}
 
@@ -199,8 +210,8 @@ export default class Thinker extends Critter {
 
 		genome.internalParams = {
 			constant: 1,
-			x: 0,
-			y: 0
+			x: true,
+			y: true
 		};
 		// genome.internalParams.push(Math.random()); // a random constant to motivate movement in the absence of sensory input
 		//genome.internalParams.push(...); // in the future we could implement some kind of oscillator here, perhaps
@@ -212,7 +223,7 @@ export default class Thinker extends Critter {
 				inputNeurons: 8 + Object.keys(genome.internalParams).length, // 0-7 are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
 				hiddenNeurons: 5,
-				numHiddenLayers: 2
+				numHiddenLayers: 3
 		});
 
 		// // random color

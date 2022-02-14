@@ -3,7 +3,13 @@
 // to see where it would move if other critters occupied those cells
 
 export default class CellWidget {
-	constructor(canvas, critter) {
+	constructor(parentElement, critter) {
+		// create new canvas to display diagram
+		let canvas = document.createElement("canvas");
+		canvas.width = 500;
+		canvas.height = 500;
+		parentElement.appendChild(canvas);
+
     this.canvas = canvas;
 		this.context = this.canvas.getContext("2d");
     this.critter = critter;
