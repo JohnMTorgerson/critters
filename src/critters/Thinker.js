@@ -37,7 +37,7 @@ export default class Thinker extends Critter {
     let newY = this.position.y + move.y;
 
 		// update position only if the space is free and in bounds
-    if (!this._sense(action) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
+    if (!this._sense(move) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
       this.position.x = newX;
       this.position.y = newY;
     }
@@ -49,10 +49,10 @@ export default class Thinker extends Critter {
 	senseAll() {
 		// gather the sensory input
 		let senses = [];
-		for (let i=0, len=this.brain.inputNeurons - Object.keys(this.genome.internalParams).length; i<len; i++) {
-			// we pass i+1 because the sense function enumerates the neighboring cells as 1-8, not 0-7
-			senses.push(this._sense(i+1));
+		for (let i=0; i<this.genome.sensoryNeurons.length; i++) {
+			senses.push(this._sense(this.genome.sensoryNeurons[i]));
 		}
+		// add updated, normalized x and y positions of the critter, and the constant
 		let x, y;
 		if (this.genome.internalParams.x) x = this.position.x / this.canvas.width * 2 - 1;
 		if (this.genome.internalParams.y) y = this.position.y / this.canvas.height * 2 - 1;
@@ -144,17 +144,13 @@ export default class Thinker extends Critter {
 
 	// -------- private utility functions -------- //
 
-	// sense whether something is in an adjacent cell
-	// (which cell being given by the 'direction' parameter, values 1-8, 1 being 12:00 or North, proceeding clockwise)
-	// returns 1 if the cell is occupied (or out of bounds) and a 0 if not
-	_sense(direction) {
-
-		if (typeof direction === 'string') return false;
+	// sense whether something is in a cell
+	// given by a set of coordinates relative to the critter's position
+	_sense(coords) {
 
 		// find the center pixel in the cell to test
-		let translation = this._getTranslation(direction);
-		let x = this.position.x + translation.x;
-		let y = this.position.y + translation.y;
+		let x = this.position.x + coords.x;
+		let y = this.position.y + coords.y;
 
 		// if the pixel is out of bounds, return 1
 		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
@@ -200,6 +196,7 @@ export default class Thinker extends Critter {
 		// to a value or function contained within internalParams
 		return {
 			brain: null, // brain will contain an instance of a NeuralNet
+			sensoryNeurons: [],
 			internalParams: {}
 		};
 	}
@@ -207,6 +204,18 @@ export default class Thinker extends Critter {
 	// create a random genome
 	_randomGenome() {
 		let genome = this._emptyGenome();
+
+		// sensory neurons will contain a list of cells to sense
+		// each designated by an x and y coordinate relative to the critter's position
+		let radius = 1; // how many cells out the critter can sense;
+		for (let y=0-radius; y<=radius; y++) {
+			for (let x=0-radius; x<=radius; x++) {
+				if (Math.round(Math.sqrt(Math.pow(x,2) + Math.pow(y,2))) <= radius) {
+					if (x!==0 || y!==0) genome.sensoryNeurons.push({x:x*this.cellSize,y:y*this.cellSize});
+				}
+			}
+		}
+		// console.log(genome.sensoryNeurons);
 
 		genome.internalParams = {
 			constant: 1,
@@ -220,10 +229,10 @@ export default class Thinker extends Critter {
 		// in the future, we could implement distance vision and color sensing,
 		// as potential examples of more sophisticated sensory input
 		genome.brain = new NeuralNet({
-				inputNeurons: 8 + Object.keys(genome.internalParams).length, // 0-7 are for sensing, the rest determined by the genome's internal params
+				inputNeurons: genome.sensoryNeurons.length + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
 				hiddenNeurons: 5,
-				numHiddenLayers: 3
+				numHiddenLayers: 1
 		});
 
 		// // random color

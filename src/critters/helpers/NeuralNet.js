@@ -58,6 +58,7 @@ export default class NeuralNet {
 	// here we need to calculate the output of the neural network, given some sensory inputs
 	// in the form of an array, one value for each input neuron
 	think(inputs) {
+		// console.log(`inputs: ${inputs.length}`);
 		// map inputs to the first layer of the network
 		this.network[0].values = math.matrix(inputs);
 
