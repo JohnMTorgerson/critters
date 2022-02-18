@@ -1,5 +1,5 @@
 import CellWidget from './CellWidget.js';
-import NetWidget from './NetWidget.js';
+import NetWidget from './NetWidget2.js';
 
 export default class MindReader {
 	constructor(element, critter) {

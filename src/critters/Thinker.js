@@ -37,7 +37,7 @@ export default class Thinker extends Critter {
     let newY = this.position.y + move.y;
 
 		// update position only if the space is free and in bounds
-    if (!this._sense(move) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
+    if (!this._sense({x:move.x/this.cellSize,y:move.y/this.cellSize}) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
       this.position.x = newX;
       this.position.y = newY;
     }
@@ -149,8 +149,8 @@ export default class Thinker extends Critter {
 	_sense(coords) {
 
 		// find the center pixel in the cell to test
-		let x = this.position.x + coords.x;
-		let y = this.position.y + coords.y;
+		let x = this.position.x + (coords.x * this.cellSize);
+		let y = this.position.y + (coords.y * this.cellSize);
 
 		// if the pixel is out of bounds, return 1
 		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
@@ -207,11 +207,12 @@ export default class Thinker extends Critter {
 
 		// sensory neurons will contain a list of cells to sense
 		// each designated by an x and y coordinate relative to the critter's position
+		// which represent the number of cells (not pixels) in those directions
 		let radius = 1; // how many cells out the critter can sense;
 		for (let y=0-radius; y<=radius; y++) {
 			for (let x=0-radius; x<=radius; x++) {
 				if (Math.round(Math.sqrt(Math.pow(x,2) + Math.pow(y,2))) <= radius) {
-					if (x!==0 || y!==0) genome.sensoryNeurons.push({x:x*this.cellSize,y:y*this.cellSize});
+					if (x!==0 || y!==0) genome.sensoryNeurons.push({x:x,y:y});
 				}
 			}
 		}

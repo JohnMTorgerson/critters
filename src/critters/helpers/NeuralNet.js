@@ -69,7 +69,13 @@ export default class NeuralNet {
 			let unnormalized = math.multiply(this.network[i].values, this.network[i].weights);
 			// then normalize the values
 			let normalized = unnormalized.map((value, index, matrix) => {
-				return Math.ceil(Math.tanh(value)); // normalize to within -1 and 1, and then convert to discrete values, either 0 or 1
+				// normalize to within 0 and 1,
+				// and (except for the final layer) convert to discrete values, either 0 or 1
+				let normV = (Math.tanh(value) + 1) / 2;
+				if (i < this.network.length-2) {
+					normV = Math.round(normV); // intermediate layers should either be 0 or 1
+				}
+				return normV;
 			});
 			// assign the normalized values to the next layer
 			this.network[i+1].values = normalized;

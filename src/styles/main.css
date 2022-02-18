@@ -55,3 +55,7 @@ body {
   width: 450px;
   font-size: 16pt;
 }
+
+#netWidgetCanvas {
+  /* background-color: gray; */
+}
