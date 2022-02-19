@@ -81,7 +81,7 @@ export default class Thinker extends Critter {
 						return Math.random() * 2 - 1;
 					}
 					// the rest of the time, adjust the weight up or down by a tiny amount
-					return weight * (1 + this.gameOpts.weightMutationAmount * (2 * coinflip() - 1));
+					return Math.min(Math.max(weight * (1 + this.gameOpts.weightMutationAmount * (2 * coinflip() - 1)),-1),1);
 				});
 
 				// let parentMatrix = parent.network[indexL].weights;
@@ -233,7 +233,7 @@ export default class Thinker extends Critter {
 				inputNeurons: genome.sensoryNeurons.length + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
 				hiddenNeurons: 5,
-				numHiddenLayers: 1
+				numHiddenLayers: 0
 		});
 
 		// // random color

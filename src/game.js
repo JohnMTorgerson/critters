@@ -65,15 +65,15 @@ function runGeneration(autoplay, cb, critters, delay) {
 	// context.fillStyle = 'gray';
 	// context.fill();
 
-	context.beginPath();
-	context.rect(330, 100, 5, 235);
-	context.fillStyle = 'gray';
-	context.fill();
-
-	context.beginPath();
-	context.rect(100, 330, 235, 5);
-	context.fillStyle = 'gray';
-	context.fill();
+	// context.beginPath();
+	// context.rect(330, 100, 5, 235);
+	// context.fillStyle = 'gray';
+	// context.fill();
+	//
+	// context.beginPath();
+	// context.rect(100, 330, 235, 5);
+	// context.fillStyle = 'gray';
+	// context.fill();
 
 
 
