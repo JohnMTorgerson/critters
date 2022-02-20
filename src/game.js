@@ -4,12 +4,16 @@ import Critter from './critters/Critter.js';
 // declare the global Simulator object
 let sim;
 let canvas = document.getElementById("sim-canvas");
+canvas.width = 500;
+canvas.height = 500;
+let context = canvas.getContext("2d");
 let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
   numCritters : 500, // number of critters in each generation
 	numSteps : 150, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
+	autoplay : true, // whether to start each new generation automatically rather than pause between generations
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
 	weightMutationAmount : 0.1 // mutation amount added or subtracted to the weight of each gene every reproduction
 }
@@ -22,7 +26,7 @@ function main(critters) {
 	if (sim) delay = sim._delay;
 
 	// console.log('main');
-	runGeneration(true, () => {
+	runGeneration(opts.autoplay, () => {
 		let survivors = runSelection();
 		if (survivors.length < 2) {
 			window.alert('EXTINCTION');
@@ -42,50 +46,11 @@ function main(critters) {
 function runGeneration(autoplay, cb, critters, delay) {
 	document.getElementById('generation').innerHTML = 'Generation ' + generation;
 
-  let context = canvas.getContext("2d");
-
-	// clear event listeners
 	// clear canvas
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
   // draw some obstacles
-
-  // context.beginPath();
-  // context.rect(165, 165, 165, 165);
-  // context.fillStyle = 'gray';
-  // context.fill();
-	//
-	// context.beginPath();
-	// context.rect(300, 100, 100, 100);
-	// context.fillStyle = 'gray';
-	// context.fill();
-	//
-	// context.beginPath();
-	// context.rect(100, 300, 100, 100);
-	// context.fillStyle = 'gray';
-	// context.fill();
-
-	// context.beginPath();
-	// context.rect(330, 100, 5, 235);
-	// context.fillStyle = 'gray';
-	// context.fill();
-	//
-	// context.beginPath();
-	// context.rect(100, 330, 235, 5);
-	// context.fillStyle = 'gray';
-	// context.fill();
-
-
-
-	// context.beginPath();
-  // context.rect(50, 50, 400, 5);
-  // context.fillStyle = 'gray';
-  // context.fill();
-
-	// context.beginPath();
-	// context.rect(50, 50, 5, 400);
-	// context.fillStyle = 'gray';
-	// context.fill();
+	drawObstacles();
 
 	context.fillStyle = 'red';
 
@@ -122,15 +87,15 @@ function runSelection() {
 	// filtered = sim.critters;
 
 	// SE nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y > opts.worldHeight * 2 / 3));
 	// NW nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth / 3 && critter.position.y < opts.worldHeight / 3));
 	// NE nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y < canvas.height / 3));
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
 
 	// center nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
-	filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
+	// filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
 
 	// left and top edges
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
@@ -138,7 +103,6 @@ function runSelection() {
 	return filtered;
 }
 
-// bug: currently, critters will overlap, since they aren't being drawn as they are being created
 function runReproduction(oldGen) {
 	// before reproduction we have to empty the old simulator's worldMatrix
 	// because the offspring critters will inherit it, and need room to populate;
@@ -186,6 +150,55 @@ function runReproduction(oldGen) {
 	// console.log('newGen length after trim: ' + newGen.length);
 
 	return newGen;
+}
+
+function drawObstacles() {
+
+	// draw whatever shapes we want onto the canvas;
+	// when the Simulator is created later, it will
+	// read the canvas and store anything it finds as an obstacle
+
+	// context.beginPath();
+	// context.rect(35, 35, 35, 35);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
+	context.beginPath();
+	context.rect(165, 165, 165, 165);
+	context.fillStyle = 'gray';
+	context.fill();
+	//
+	// context.beginPath();
+	// context.rect(300, 100, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
+	//
+	// context.beginPath();
+	// context.rect(100, 300, 100, 100);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
+	// context.beginPath();
+	// context.rect(330, 100, 5, 235);
+	// context.fillStyle = 'gray';
+	// context.fill();
+	//
+	// context.beginPath();
+	// context.rect(100, 330, 235, 5);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
+
+	// context.beginPath();
+	// context.rect(50, 50, 400, 5);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
+	// context.beginPath();
+	// context.rect(50, 50, 5, 400);
+	// context.fillStyle = 'gray';
+	// context.fill();
+
 }
 
 function addKeyboardEvents(e) {

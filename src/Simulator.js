@@ -1,6 +1,7 @@
 import Critter from './critters/Critter.js';
 import Bouncer from './critters/Bouncer.js';
 import Thinker from './critters/Thinker.js';
+import Obstacle from './items/Obstacle.js';
 
 // -------- Simulator class -------- //
 
@@ -27,7 +28,7 @@ export default class Simulator {
 		this.opts = opts;
 		this.cb = cb; // callback function to be run when the generation is over
 
-		// world matrix keeps track of what's in each cell
+		// create the world matrix, which keeps track of what's in each cell
 		this.worldMatrix = (() => {
 			let cols = Math.round(this.canvas.width / this.cellSize);
 			let rows = Math.round(this.canvas.height / this.cellSize);
@@ -43,7 +44,27 @@ export default class Simulator {
 			return matrix;
 		})();
 
-		// the master array of all critters in the simulation
+		// find anything already drawn to the canvas
+		// (would be drawn by the game prior to the Simulator's instantiation)
+		// and add it as an Obstacle in the worldMatrix;
+		for (let r=0; r<this.worldMatrix.length; r++) {
+			let row = this.worldMatrix[r];
+			for (let c=0; c<row.length; c++) {
+				// check the center pixel of each cell,
+				// and if there's anything there, tell that cell
+				// in the worldMatrix that there's an obstacle there
+				let x = (c+0.5) * this.cellSize;
+				let y = (r+0.5) * this.cellSize;
+				let pixelData = this.context.getImageData(x, y, 1, 1).data;
+				if (pixelData[3] !== 0) {
+					this.worldMatrix[r][c] = new Obstacle({c,r});
+				}
+			}
+		}
+
+		// if the master array of all critters in the simulation
+		// is already populated, add all the critters to the worldMatrix,
+		// otherwise, create an empty array to be filled with critters later
 		if (Array.isArray(critters)) {
 			this.critters = critters;
 
@@ -54,12 +75,20 @@ export default class Simulator {
 			// we need to bind each one to the new worldMatrix created by this Simulator
 			// and update it with their positions
 			this.critters.map((c) => {
-				// if (this.worldMatrix[c.position.y][c.position.x] === null) {
-					this.worldMatrix[c.position.y][c.position.x] = c;
-				// } else {
-				// 	// we'll need to give the critter a new position here, in some fashion
-				// }
+				// first, bind the new worldMatrix to the critter
 				c.worldMatrix = this.worldMatrix;
+
+				// if the critter's position is on top of something
+				// already in the new worldMatrix,
+				// we need to give the critter a new position
+				// that doesn't overlap with anything else
+				if (this.worldMatrix[c.position.y][c.position.x] !== null) {
+					c.position = c.randomPosition();
+				}
+				// then store the critter in the worldMatrix
+				this.worldMatrix[c.position.y][c.position.x] = c;
+				// and draw the initial position of the critter
+				c.draw();
 			});
 		} else {
 			this.critters = [];

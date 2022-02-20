@@ -15,7 +15,7 @@ export default class Critter {
 			this.position = params.position;
 		} else {
 			// if position is not passed, create a random one
-			this.position = this._randomPosition(this.canvas, this.context, this.cellSize);
+			this.position = this.randomPosition();
 		}
 		if (typeof params.genome === "object") {
 			this.genome = params.genome;
@@ -98,6 +98,28 @@ export default class Critter {
     // this.context.stroke();
 	}
 
+	randomPosition() {
+		// random position
+		let x;
+		let y;
+
+		// do {
+		// 	x = Math.floor(Math.random() * canvas.width / cellSize) * cellSize + (cellSize/2);
+		// 	y = Math.floor(Math.random() * canvas.height / cellSize) * cellSize + (cellSize/2);
+		// } while (context.getImageData(x, y, 1, 1).data[3] !== 0);
+
+		// find random x and y values for the position,
+		// but only if they aren't already occupied by something
+		// in the worldMatrix
+		do {
+			x = Math.floor(Math.random() * this.worldWidth);
+			y = Math.floor(Math.random() * this.worldHeight);
+		} while (this.worldMatrix[y][x] !== null);
+
+		return {x:x,y:y};
+		// return {x: (x/cellSize - 0.5), y: (y/cellSize - 0.5)};
+	}
+
 	// -------- private utility functions -------- //
 
 	// sense whether something is in a cell
@@ -141,17 +163,4 @@ export default class Critter {
 		return {x:x,y:y};
 	}
 
-	_randomPosition(canvas, context, cellSize) {
-		// random position
-		let x;
-		let y;
-		do {
-			x = Math.floor(Math.random() * canvas.width / cellSize) * cellSize + (cellSize/2);
-			y = Math.floor(Math.random() * canvas.height / cellSize) * cellSize + (cellSize/2);
-		} while (context.getImageData(x, y, 1, 1).data[3] !== 0);
-		// } while (this.worldMatrix[y][x] !== null);
-
-		// return {x:x,y:y};
-		return {x: (x/cellSize - 0.5), y: (y/cellSize - 0.5)};
-	}
 }
