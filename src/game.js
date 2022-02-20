@@ -3,7 +3,7 @@ import Critter from './critters/Critter.js';
 
 // declare the global Simulator object
 let sim;
-let canvas;
+let canvas = document.getElementById("sim-canvas");
 let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
@@ -13,6 +13,8 @@ let opts = {
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
 	weightMutationAmount : 0.1 // mutation amount added or subtracted to the weight of each gene every reproduction
 }
+opts.worldWidth = Math.round(canvas.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
+opts.worldHeight = Math.round(canvas.height / opts.cellSize); // height of the canvas in cells (rather than in pixels)
 
 function main(critters) {
 	// this is simply to keep the user-set speed between generations
@@ -40,8 +42,6 @@ function main(critters) {
 function runGeneration(autoplay, cb, critters, delay) {
 	document.getElementById('generation').innerHTML = 'Generation ' + generation;
 
-	// get canvas element
-	canvas = document.getElementById("sim-canvas");
   let context = canvas.getContext("2d");
 
 	// clear event listeners
@@ -115,19 +115,20 @@ function runGeneration(autoplay, cb, critters, delay) {
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
 	let filtered = [];
+
 	// no filter
 	// filtered = sim.critters;
 
 	// SE nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
+	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y > canvas.height * 2 / 3));
 	// NW nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width / 3 && critter.position.y < canvas.height / 3));
 	// NE nonant
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > canvas.width * 2 / 3 && critter.position.y < canvas.height / 3));
 
 	// center nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < canvas.width * 2 / 3 && critter.position.y < canvas.height * 2 / 3));
-	// filtered = filtered.filter(critter => critter.position.x > canvas.width / 3 && critter.position.y > canvas.height / 3);
+	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
+	filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
 
 	// left and top edges
 	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
@@ -146,7 +147,7 @@ function runReproduction(oldGen) {
 	// (since each pairing only produces one child, we loop around as many times as needed)
 	while (newGen.length < opts.numCritters) {
 		// loop through all the critters, pairing them up randomly to create a single child
-		let temp = [...oldGen]; // this single-layer "deep" copy is fine, since we're not altering the critters
+		let temp = [...oldGen]; // this shallow copy is fine, since we're not altering the critters
 		for (let i=0, halfLen = Math.floor(temp.length / 2); i < halfLen; i++) {
 			let mom = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
 			let dad = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];

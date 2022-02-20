@@ -16,6 +16,10 @@ export default class Simulator {
 		this._delay = this._defaultDelay; // set interval to default interval delay
 		this._maxDelay = this._defaultDelay * 64 || 1600; // max interval delay
 		this._minDelay = this._defaultDelay / 4 || 50; // min interval delay
+
+		// public properties
+		this.canvas = canvas;
+		this.context = this.canvas.getContext("2d");
 		this.cellSize = opts.cellSize; // size of each creature/cell in the grid
 	  this.numCritters = opts.numCritters; // the number of critters to make
 		this.numSteps = opts.numSteps;
@@ -23,9 +27,12 @@ export default class Simulator {
 		this.opts = opts;
 		this.cb = cb; // callback function to be run when the generation is over
 
-		// public properties
-		this.canvas = canvas;
-		this.context = this.canvas.getContext("2d");
+		// world matrix keeps track of what's in each cell
+		this.worldMatrix = (() => {
+			let cols = Math.round(this.canvas.width / this.cellSize);
+			let rows = Math.round(this.canvas.height / this.cellSize);
+			return Array(rows).fill(Array(cols).fill(null));
+		})();
 
 		// the master array of all critters in the simulation
 		if (Array.isArray(critters)) {
@@ -121,8 +128,8 @@ export default class Simulator {
 		console.log(`x: ${pos.x}, y:${pos.y}`);
 
 		// normalize the position to the center of the nearest cell
-		pos.x = Math.floor(pos.x / this.cellSize) * this.cellSize + (this.cellSize/2);
-		pos.y = Math.floor(pos.y / this.cellSize) * this.cellSize + (this.cellSize/2);
+		pos.x = Math.floor(pos.x / this.cellSize);// * this.cellSize + (this.cellSize/2);
+		pos.y = Math.floor(pos.y / this.cellSize);// * this.cellSize + (this.cellSize/2);
 
 		console.log(`x: ${pos.x}, y:${pos.y}`);
 
@@ -158,9 +165,10 @@ export default class Simulator {
 		// create critter population
 		for (let i=0; i<this.numCritters; i++) {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
-			let critter = new Thinker(this.canvas, this.opts);
+			let critter = new Thinker(this.canvas, this.worldMatrix, this.opts);
 			critter.draw(); // must draw as we go, because each new critter picks an empty cell based on testing the actual canvas for occupied pixels
 			this.critters.push(critter);
+			this.worldMatrix[critter.position.y][critter.position.x] = critter;
 		}
 
 		// draw initial position of all the bodies

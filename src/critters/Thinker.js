@@ -4,8 +4,8 @@ import NeuralNet from './helpers/NeuralNet.js';
 import MindReader from '../inspector/MindReader.js';
 
 export default class Thinker extends Critter {
-	constructor(canvas, gameOpts, params) {
-		super(canvas, gameOpts, params)
+	constructor(canvas, worldMatrix, gameOpts, params) {
+		super(canvas, worldMatrix, gameOpts, params)
 
 		// if we weren't given a genome, create a random one
 		if (typeof this.genome === "undefined" || Object.keys(this.genome).length === 0) {
@@ -36,8 +36,10 @@ export default class Thinker extends Critter {
     let newX = this.position.x + move.x;
     let newY = this.position.y + move.y;
 
+		// console.log(`newX: ${newX}, newY:${newY}`);
+
 		// update position only if the space is free and in bounds
-    if (!this._sense({x:move.x/this.cellSize,y:move.y/this.cellSize}) && newX > 0 && newX < this.canvas.width && newY > 0 && newY < this.canvas.height) {
+    if (!this._sense({x:move.x,y:move.y})) {// && newX >= 0 && newX < this.worldWidth && newY >= 0 && newY < this.worldHeight) {
       this.position.x = newX;
       this.position.y = newY;
     }
@@ -54,8 +56,8 @@ export default class Thinker extends Critter {
 		}
 		// add updated, normalized x and y positions of the critter, and the constant
 		let x, y;
-		if (this.genome.internalParams.x) x = this.position.x / this.canvas.width * 2 - 1;
-		if (this.genome.internalParams.y) y = this.position.y / this.canvas.height * 2 - 1;
+		if (this.genome.internalParams.x) x = this.position.x * this.cellSize / this.canvas.width * 2 - 1;
+		if (this.genome.internalParams.y) y = this.position.y * this.cellSize / this.canvas.height * 2 - 1;
 		senses = senses.concat([this.genome.internalParams.constant,x,y]);
 		// console.log('------------------');
 		// console.log(`x:${this.position.x/this.cellSize + .5}, y:${this.position.y/this.cellSize + .5}`);
@@ -130,7 +132,7 @@ export default class Thinker extends Critter {
 		// 	}
 		// }
 
-		return new Thinker(this.canvas, this.gameOpts, {
+		return new Thinker(this.canvas, this.worldMatrix, this.gameOpts, {
 			genome : childGenome
 		});
 	}
@@ -149,8 +151,8 @@ export default class Thinker extends Critter {
 	_sense(coords) {
 
 		// find the center pixel in the cell to test
-		let x = this.position.x + (coords.x * this.cellSize);
-		let y = this.position.y + (coords.y * this.cellSize);
+		let x = (this.position.x + coords.x + 0.5) * this.cellSize;
+		let y = (this.position.y + coords.y + 0.5) * this.cellSize;
 
 		// if the pixel is out of bounds, return 1
 		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
@@ -162,6 +164,16 @@ export default class Thinker extends Critter {
 		return pixelData[3] !== 0 ? 1 : 0;
 	}
 
+	// sense whether something is in a cell
+	// given by a set of coordinates relative to the critter's position
+	// return the object in that cell or null if it is empty
+	// _sense({x,y}) {
+	// 	x += this.position.x;
+	// 	y += this.position.y;
+	//
+	// 	return this.worldMatrix[y][x];
+	// }
+
 	// given an action (an integer from 0 to 8)
 	// get the corresponding number of pixels to move by
 	// (e.g. 1 is up a cell, 3 is right a cell, 4 is right and down a cell)
@@ -171,17 +183,17 @@ export default class Thinker extends Critter {
 		let up = [1,2,8];
 		let down = [4,5,6];
 		if (up.includes(action)) {
-			y -= this.cellSize;
+			y--; //-= this.cellSize;
 		} else if (down.includes(action)) {
-			y += this.cellSize;
+			y++; //+= this.cellSize;
 		}
 
 		let left = [6,7,8];
 		let right = [2,3,4];
 		if (left.includes(action)) {
-			x -= this.cellSize;
+			x--;// -= this.cellSize;
 		} else if (right.includes(action)) {
-			x += this.cellSize;
+			x++// += this.cellSize;
 		}
 
 		return {x:x,y:y};
@@ -205,10 +217,16 @@ export default class Thinker extends Critter {
 	_randomGenome() {
 		let genome = this._emptyGenome();
 
+		// first, set some parameters for the genome;
+		let radius = typeof this.params.sensoryRadius !== "undefined" ? this.params.sensoryRadius : 1; // how many cells out the critter can sense;
+		let hiddenNeurons = typeof this.params.hiddenNeurons !== "undefined" ? this.params.hiddenNeurons : 5; // number of hidden neurons
+		let numHiddenLayers = typeof this.params.numHiddenLayers !== "undefined" ? this.params.numHiddenLayers : 1; // number of hidden layers
+		let senseX = typeof this.params.senseX !== "undefined" ? this.params.senseX : true; // whether the critter can sense its absolute x position or not (boolean)
+		let senseY = typeof this.params.senseY !== "undefined" ? this.params.senseY : true; // whether the critter can sense its absolute y position or not (boolean)
+
 		// sensory neurons will contain a list of cells to sense
 		// each designated by an x and y coordinate relative to the critter's position
 		// which represent the number of cells (not pixels) in those directions
-		let radius = 1; // how many cells out the critter can sense;
 		for (let y=0-radius; y<=radius; y++) {
 			for (let x=0-radius; x<=radius; x++) {
 				if (Math.round(Math.sqrt(Math.pow(x,2) + Math.pow(y,2))) <= radius) {
@@ -220,8 +238,8 @@ export default class Thinker extends Critter {
 
 		genome.internalParams = {
 			constant: 1,
-			x: true,
-			y: true
+			x: senseX,
+			y: senseY
 		};
 		// genome.internalParams.push(Math.random()); // a random constant to motivate movement in the absence of sensory input
 		//genome.internalParams.push(...); // in the future we could implement some kind of oscillator here, perhaps
@@ -232,8 +250,8 @@ export default class Thinker extends Critter {
 		genome.brain = new NeuralNet({
 				inputNeurons: genome.sensoryNeurons.length + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
-				hiddenNeurons: 5,
-				numHiddenLayers: 0
+				hiddenNeurons: hiddenNeurons,
+				numHiddenLayers: numHiddenLayers
 		});
 
 		// // random color

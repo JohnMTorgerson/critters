@@ -1,10 +1,13 @@
 // -------- Critter class -------- //
 
 export default class Critter {
-	constructor(canvas, gameOpts, params) {
+	constructor(canvas, worldMatrix, gameOpts, params) {
+		this.worldMatrix = worldMatrix;
 		if (typeof params === "undefined") params = {};
 		this.canvas = canvas;
     this.cellSize = gameOpts.cellSize;
+		this.worldWidth = gameOpts.worldWidth;
+		this.worldHeight = gameOpts.worldHeight;
 		this.context = this.canvas.getContext("2d");
 		this.params = params;
 		this.gameOpts = gameOpts;
@@ -43,7 +46,7 @@ export default class Critter {
 	draw(color) {
     // console.log('drawing!');
 		this.context.beginPath();
-		this.context.arc(this.position.x, this.position.y, this.cellSize / 2, 0, 2 * Math.PI, false);
+		this.context.arc(this.cellSize * (this.position.x + 0.5), this.cellSize * (this.position.y + 0.5), this.cellSize / 2, 0, 2 * Math.PI, false);
 		this.context.closePath();
     if (typeof color === 'undefined') {
       this.context.fillStyle = this.genome.color;
@@ -62,6 +65,9 @@ export default class Critter {
 	}
 
 	erase({x,y}) {
+		x = this.cellSize * (x + 0.5);
+		y = this.cellSize * (y + 0.5);
+
     // this.draw('white');
     let r = this.cellSize / 2; // 'r' for radius of the circle
     this.context.clearRect(x - r, y - r, r * 2, r * 2);
@@ -81,7 +87,9 @@ export default class Critter {
 			x = Math.floor(Math.random() * canvas.width / cellSize) * cellSize + (cellSize/2);
 			y = Math.floor(Math.random() * canvas.height / cellSize) * cellSize + (cellSize/2);
 		} while (context.getImageData(x, y, 1, 1).data[3] !== 0);
+		// } while (this.worldMatrix[y][x] !== null);
 
-		return {x:x,y:y};
+		// return {x:x,y:y};
+		return {x: (x/cellSize - 0.5), y: (y/cellSize - 0.5)};
 	}
 }

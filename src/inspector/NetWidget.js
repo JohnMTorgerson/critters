@@ -104,7 +104,7 @@ export default class NetWidget {
 							this.context.beginPath();
 							this.context.moveTo(neuron.x, neuron.y);
 							this.context.lineTo(nextLayer[w].x, nextLayer[w].y);
-							this.context.lineWidth = Math.abs(weight) * 30;
+							this.context.lineWidth = Math.abs(Math.pow(weight,2)) * 30;
 							this.context.strokeStyle = this.colorString(weight, 0.7);
 							this.context.stroke();
 						}
