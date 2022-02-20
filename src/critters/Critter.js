@@ -23,11 +23,24 @@ export default class Critter {
 			// if genome is not passed, create a blank object
 			this.genome = {};
 		}
+
+		// add the position to the worldMatrix
+		this.updatePosition();
 	}
 
 	// method to move the critter's position
-	// and update the canvas with the new position
-	move() {
+	// and update the canvas/worldMatrix with the new position
+	move(oldPos,newPos) {
+		// update internal position object
+		this.position = {...newPos};
+
+		// update position in worldMatrix
+		this.deletePosition(oldPos);
+		this.updatePosition();
+
+		// update position on canvas
+		this.erase(oldPos);
+		this.draw();
 	}
 
 	// reproduction method,
@@ -41,6 +54,14 @@ export default class Critter {
 
 		// return element
 		return inspectorHook;
+	}
+
+	deletePosition(pos) {
+		this.worldMatrix[pos.y][pos.x] = null;
+	}
+
+	updatePosition() {
+		this.worldMatrix[this.position.y][this.position.x] = this;
 	}
 
 	draw(color) {
@@ -78,6 +99,47 @@ export default class Critter {
 	}
 
 	// -------- private utility functions -------- //
+
+	// sense whether something is in a cell
+	// given by a set of coordinates relative to the critter's position
+	// return the object in that cell or null if it is empty
+	_sense({x,y}) {
+		x += this.position.x;
+		y += this.position.y;
+
+		// if out of bounds, return 1
+		if (x<0 || x>=this.worldWidth || y<0 || y>=this.worldHeight) return 1;
+
+		// console.log(`x:${x}, y:${y}`);
+
+		// otherwise return contents of that cell (will be null if empty)
+		return this.worldMatrix[y][x];
+	}
+
+	// given an action (an integer from 0 to 8)
+	// get the corresponding number of pixels to move by
+	// (e.g. 1 is up a cell, 3 is right a cell, 4 is right and down a cell)
+	_getTranslation(action) {
+		let x = 0;
+		let y = 0;
+		let up = [1,2,8];
+		let down = [4,5,6];
+		if (up.includes(action)) {
+			y--; //-= this.cellSize;
+		} else if (down.includes(action)) {
+			y++; //+= this.cellSize;
+		}
+
+		let left = [6,7,8];
+		let right = [2,3,4];
+		if (left.includes(action)) {
+			x--;// -= this.cellSize;
+		} else if (right.includes(action)) {
+			x++// += this.cellSize;
+		}
+
+		return {x:x,y:y};
+	}
 
 	_randomPosition(canvas, context, cellSize) {
 		// random position

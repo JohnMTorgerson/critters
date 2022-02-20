@@ -91,6 +91,8 @@ function runGeneration(autoplay, cb, critters, delay) {
 
 
 	// instantiate global Simulator object
+	// (which will create its own new empty worldMatrix
+	// and bind any critters passed to it to the new worldMatrix)
 	sim = new Simulator(canvas, opts, cb, critters);
 	if (typeof delay !== "undefined")	sim._delay = delay; // keep the user's speed setting from the previous generation, if applicable
 
@@ -138,6 +140,14 @@ function runSelection() {
 
 // bug: currently, critters will overlap, since they aren't being drawn as they are being created
 function runReproduction(oldGen) {
+	// before reproduction we have to empty the old simulator's worldMatrix
+	// because the offspring critters will inherit it, and need room to populate;
+	// later, when we run a new generation, we will create a new simulator,
+	// and that simulator will bind these offspring critters to its own new worldMatrix;
+	// this may seem kludgy, but later when we want to implement real-time reproduction,
+	// rather than step-wise generations, this step will not be necessary
+	sim.clearWorldMatrix();
+
 	let newGen = [];
 
 	// console.log(sim.critters);

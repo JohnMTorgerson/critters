@@ -13,14 +13,12 @@ export default class Thinker extends Critter {
 		}
 
 		this.brain = this.genome.brain;
+
 	}
 
 	// method to move the critter's position
 	// and update the canvas with the new position
 	move() {
-		// erase current position of critter
-		this.erase(this.position);
-
 		// get sensory data
 		let senses = this.senseAll();
 
@@ -33,31 +31,37 @@ export default class Thinker extends Critter {
 		let move = this._getTranslation(action);
 
 		// add the move to current position
-    let newX = this.position.x + move.x;
-    let newY = this.position.y + move.y;
+		let newPosition = {
+			x: this.position.x + move.x,
+	    y: this.position.y + move.y
+		}
 
 		// console.log(`newX: ${newX}, newY:${newY}`);
 
 		// update position only if the space is free and in bounds
     if (!this._sense({x:move.x,y:move.y})) {// && newX >= 0 && newX < this.worldWidth && newY >= 0 && newY < this.worldHeight) {
-      this.position.x = newX;
-      this.position.y = newY;
+			// call the move method from the Critter class,
+			// which will do all the erasing and drawing on the canvas
+			// and update the worldMatrix
+			// and update this.position
+			super.move(this.position,newPosition);
     }
-
-		// then draw the critter
-		this.draw();
 	}
 
 	senseAll() {
 		// gather the sensory input
 		let senses = [];
 		for (let i=0; i<this.genome.sensoryNeurons.length; i++) {
-			senses.push(this._sense(this.genome.sensoryNeurons[i]));
+			// since this._sense returns the whole critter if it finds one,
+			// or any information stored by any other object in the worldMatrix,
+			// we could use that information to sense different properties of those things, in principle;
+			// for now, though, we just return a 1 if anything is there (0 if not)
+			senses.push(this._sense(this.genome.sensoryNeurons[i]) !== null ? 1 : 0);
 		}
 		// add updated, normalized x and y positions of the critter, and the constant
 		let x, y;
-		if (this.genome.internalParams.x) x = this.position.x * this.cellSize / this.canvas.width * 2 - 1;
-		if (this.genome.internalParams.y) y = this.position.y * this.cellSize / this.canvas.height * 2 - 1;
+		if (this.genome.internalParams.x) x = this.position.x / this.worldWidth * 2 - 1;
+		if (this.genome.internalParams.y) y = this.position.y / this.worldHeight * 2 - 1;
 		senses = senses.concat([this.genome.internalParams.constant,x,y]);
 		// console.log('------------------');
 		// console.log(`x:${this.position.x/this.cellSize + .5}, y:${this.position.y/this.cellSize + .5}`);
@@ -68,7 +72,7 @@ export default class Thinker extends Critter {
 
 	// reproduction method,
 	// takes another critter to mate with as an argument
-	// returns an offspring critter with mixed, mutated genome
+	// returns an offspring critter with mixed, mutated genome;
 	fuck(spouse) {
 		let childGenome = this._randomGenome();
 		let coinflip = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
@@ -109,29 +113,6 @@ export default class Thinker extends Critter {
 		// console.log(spouse.brain.network);
 		// console.log(childGenome.brain.network);
 
-
-		// create a new NeuralNet and use the setWeight method to pick between parent connections
-		// mutate those connections
-		// then pick between the internalParams of each parent's genome
-
-		// for (let i=0; i<=8; i++) {
-		// 	// -- parent recombination
-		// 	let parentGenome = coinflip() == 0 ? this.genome : spouse.genome;
-		// 	genome[i.toString()].action = parentGenome[i.toString()].action;
-		// 	genome[i.toString()].weight = parentGenome[i.toString()].weight;
-		//
-		// 	// -- mutation
-		// 	// first, mutate the weight a tiny bit
-		// 	genome[i.toString()].weight += 2 * (coinflip() - 0.5) * this.gameOpts.weightMutationAmount;
-		// 	genome[i.toString()].weight = Math.min(1, genome[i.toString()].weight);
-		// 	genome[i.toString()].weight = Math.max(0, genome[i.toString()].weight);
-		// 	// then, mutate the action (if chance dictates, per the mutation rate)
-		// 	if (Math.floor(Math.random() / this.params.actionMutationRate) == 0) {
-		// 		// if we're here, then we mutate the action to a random value
-		// 		genome[i.toString()].action = Math.floor(Math.random() * 9);
-		// 	}
-		// }
-
 		return new Thinker(this.canvas, this.worldMatrix, this.gameOpts, {
 			genome : childGenome
 		});
@@ -142,62 +123,29 @@ export default class Thinker extends Critter {
 
 		let mindReader = new MindReader(inspectorElement, this);
 
+		// console.log(this.worldMatrix);
+
 	}
 
 	// -------- private utility functions -------- //
 
-	// sense whether something is in a cell
-	// given by a set of coordinates relative to the critter's position
-	_sense(coords) {
-
-		// find the center pixel in the cell to test
-		let x = (this.position.x + coords.x + 0.5) * this.cellSize;
-		let y = (this.position.y + coords.y + 0.5) * this.cellSize;
-
-		// if the pixel is out of bounds, return 1
-		if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
-			return 1;
-		}
-
-		// check if the pixel is not transparent, and if it isn't, return 1, and if it is, 0
-		let pixelData = this.context.getImageData(x, y, 1, 1).data;
-		return pixelData[3] !== 0 ? 1 : 0;
-	}
-
-	// sense whether something is in a cell
-	// given by a set of coordinates relative to the critter's position
-	// return the object in that cell or null if it is empty
-	// _sense({x,y}) {
-	// 	x += this.position.x;
-	// 	y += this.position.y;
+	// // sense whether something is in a cell
+	// // given by a set of coordinates relative to the critter's position
+	// _sense(coords) {
 	//
-	// 	return this.worldMatrix[y][x];
+	// 	// find the center pixel in the cell to test
+	// 	let x = (this.position.x + coords.x + 0.5) * this.cellSize;
+	// 	let y = (this.position.y + coords.y + 0.5) * this.cellSize;
+	//
+	// 	// if the pixel is out of bounds, return 1
+	// 	if (x<0 || x>this.canvas.width || y<0 || y>this.canvas.height) {
+	// 		return 1;
+	// 	}
+	//
+	// 	// check if the pixel is not transparent, and if it isn't, return 1, and if it is, 0
+	// 	let pixelData = this.context.getImageData(x, y, 1, 1).data;
+	// 	return pixelData[3] !== 0 ? 1 : 0;
 	// }
-
-	// given an action (an integer from 0 to 8)
-	// get the corresponding number of pixels to move by
-	// (e.g. 1 is up a cell, 3 is right a cell, 4 is right and down a cell)
-	_getTranslation(action) {
-		let x = 0;
-		let y = 0;
-		let up = [1,2,8];
-		let down = [4,5,6];
-		if (up.includes(action)) {
-			y--; //-= this.cellSize;
-		} else if (down.includes(action)) {
-			y++; //+= this.cellSize;
-		}
-
-		let left = [6,7,8];
-		let right = [2,3,4];
-		if (left.includes(action)) {
-			x--;// -= this.cellSize;
-		} else if (right.includes(action)) {
-			x++// += this.cellSize;
-		}
-
-		return {x:x,y:y};
-	}
 
 	// create an empty genome
 	_emptyGenome() {

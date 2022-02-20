@@ -31,12 +31,36 @@ export default class Simulator {
 		this.worldMatrix = (() => {
 			let cols = Math.round(this.canvas.width / this.cellSize);
 			let rows = Math.round(this.canvas.height / this.cellSize);
-			return Array(rows).fill(Array(cols).fill(null));
+			// return Array(rows).fill(Array(cols).fill(null)); // <-- this doesn't appear to work, since every row is just a reference to the same row
+			let matrix = [];
+			for (let r=0; r<rows; r++) {
+				let row = [];
+				for (let c=0; c<cols; c++) {
+					row.push(null);
+				}
+				matrix.push(row);
+			}
+			return matrix;
 		})();
 
 		// the master array of all critters in the simulation
 		if (Array.isArray(critters)) {
 			this.critters = critters;
+
+			// in the case that we were passed an already-created array of critters,
+			// (as may happen when doing step-wise generations rather than continuous ones,
+			// wherein the game does reproduction in a big chunk all at once and then creates
+			// a new Simulator for the following generation (which is us))
+			// we need to bind each one to the new worldMatrix created by this Simulator
+			// and update it with their positions
+			this.critters.map((c) => {
+				// if (this.worldMatrix[c.position.y][c.position.x] === null) {
+					this.worldMatrix[c.position.y][c.position.x] = c;
+				// } else {
+				// 	// we'll need to give the critter a new position here, in some fashion
+				// }
+				c.worldMatrix = this.worldMatrix;
+			});
 		} else {
 			this.critters = [];
 		}
@@ -133,22 +157,29 @@ export default class Simulator {
 
 		console.log(`x: ${pos.x}, y:${pos.y}`);
 
-		// find which critter, if any, has been clicked on
-		for (let critter of this.critters) {
-			if (critter.position.x === pos.x && critter.position.y === pos.y) {
-				// call that critter's diagram method
-				critter.showInspector();
-				// dim the other critters
-				for (let c of this.critters) {
-					if (c.position.x !== critter.position.x && c.position.y !== critter.position.y) {
-						c.dim();
-					}
-				}
+		// // find which critter, if any, has been clicked on
+		// for (let critter of this.critters) {
+		// 	if (critter.position.x === pos.x && critter.position.y === pos.y) {
+		// 		// call that critter's diagram method
+		// 		critter.showInspector();
+		// 		// dim the other critters
+		// 		for (let c of this.critters) {
+		// 			if (c.position.x !== critter.position.x && c.position.y !== critter.position.y) {
+		// 				c.dim();
+		// 			}
+		// 		}
+		//
+		// 		return;
+		// 	}
+		// }
 
-				return;
-			}
+		let thing = this.worldMatrix[pos.y][pos.x];
+		console.log(thing);
+		if (thing instanceof Critter) {
+			thing.showInspector();
+		} else {
+			console.log('no critter here!');
 		}
-		console.log('no critter here!');
 	}
 
 	_displayValues() {
@@ -166,9 +197,8 @@ export default class Simulator {
 		for (let i=0; i<this.numCritters; i++) {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
 			let critter = new Thinker(this.canvas, this.worldMatrix, this.opts);
-			critter.draw(); // must draw as we go, because each new critter picks an empty cell based on testing the actual canvas for occupied pixels
+			critter.draw();
 			this.critters.push(critter);
-			this.worldMatrix[critter.position.y][critter.position.x] = critter;
 		}
 
 		// draw initial position of all the bodies
@@ -180,6 +210,12 @@ export default class Simulator {
 	stopSim() {
 		clearInterval(this._interval);
 		this.cb();
+	}
+
+	clearWorldMatrix() {
+		for (let row=0; row<this.worldMatrix.length; row++) {
+			this.worldMatrix[row].fill(null);
+		}
 	}
 
 }
