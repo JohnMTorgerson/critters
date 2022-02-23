@@ -11,6 +11,7 @@ export default class Critter {
 		this.context = this.canvas.getContext("2d");
 		this.params = params;
 		this.gameOpts = gameOpts;
+		this.index = params.index
 		if (typeof params.position === "object") {
 			this.position = params.position;
 		} else {
@@ -85,7 +86,14 @@ export default class Critter {
 		// (will probably have to implement a persisten color property for the critter using rgba)
 	}
 
-	erase({x,y}) {
+	erase(coords) {
+		// if no coordinates are specified, we erase the critter's current position
+		if (typeof coords === "undefined") {
+			var {x,y} = this.position;
+		} else {
+			var {x,y} = coords;
+		}
+
 		x = this.cellSize * (x + 0.5);
 		y = this.cellSize * (y + 0.5);
 

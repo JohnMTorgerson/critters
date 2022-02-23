@@ -1,6 +1,8 @@
 import Critter from './critters/Critter.js';
 import Bouncer from './critters/Bouncer.js';
 import Thinker from './critters/Thinker.js';
+import Predator from './critters/Predator.js';
+import Prey from './critters/Prey.js';
 import Obstacle from './items/Obstacle.js';
 
 // -------- Simulator class -------- //
@@ -74,8 +76,12 @@ export default class Simulator {
 			// a new Simulator for the following generation (which is us))
 			// we need to bind each one to the new worldMatrix created by this Simulator
 			// and update it with their positions
-			this.critters.map((c) => {
-				// first, bind the new worldMatrix to the critter
+			this.critters.map((c,i) => {
+				// first, tell each critter where it is in the array
+				// (this will be useful if we need to kill it later, like if it gets eaten, for instance)
+				c.index = i;
+
+				// then, bind the new worldMatrix to the critter
 				c.worldMatrix = this.worldMatrix;
 
 				// if the critter's position is on top of something
@@ -222,10 +228,33 @@ export default class Simulator {
 
 	// todo: probably move this to game.js
 	populateInitial() {
+		this.critters = [];
+
 		// create critter population
 		for (let i=0; i<this.numCritters; i++) {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
-			let critter = new Thinker(this.canvas, this.worldMatrix, this.opts);
+			let critter;
+
+			// if (i%2 === 0) {
+				critter = new Predator(this.canvas, this.worldMatrix, this.opts, {
+					index: i,
+					sensoryRadius : 1, // how many cells out the critter can sense;
+					hiddenNeurons : 5, // number of hidden neurons
+					numHiddenLayers : 1, // number of hidden layers
+					senseX : false, // whether the critter can sense its absolute x position or not (boolean)
+					senseY : false // whether the critter can sense its absolute y position or not (boolean)
+				});
+			// } else {
+			// 	critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
+			// 		index: i,
+			// 		sensoryRadius : 2, // how many cells out the critter can sense;
+			// 		hiddenNeurons : 10, // number of hidden neurons
+			// 		numHiddenLayers : 1, // number of hidden layers
+			// 		senseX : false, // whether the critter can sense its absolute x position or not (boolean)
+			// 		senseY : false // whether the critter can sense its absolute y position or not (boolean)
+			// 	});
+			// }
+
 			critter.draw();
 			this.critters.push(critter);
 		}
@@ -238,6 +267,16 @@ export default class Simulator {
 
 	stopSim() {
 		clearInterval(this._interval);
+
+		// console.log('-------- Critters Left: -----------')
+		// for (let i=0; i<this.critters.length; i++) {
+		// 	let c = this.critters[i];
+		// 	if (typeof c !== "undefined") {
+		// 		console.log(`Critter ${i} kills: ${c.killCount}`);
+		// 	}
+		// }
+
+
 		this.cb();
 	}
 
@@ -312,8 +351,18 @@ function runStep() {
 	for (var i=0, len=this.critters.length; i<len; i++) {
 		var critter = this.critters[i];
 
-		if (typeof critter !== undefined) {
-			critter.move();
+		if (typeof critter !== "undefined") {
+			// tell the critter to make a move
+			let message = critter.move();
+
+			// if the critter returned a message after its move, it will be an object with certain keys
+			if (typeof message === "object") {
+				// if the message is 'kill', then we need to delete the critter at the given index
+				if (message.hasOwnProperty('kill') && message.kill >=0 && message.kill < this.critters.length) {
+					this.critters[message.kill].erase();
+					this.critters[message.kill] = undefined;
+				}
+			}
 		}
 	}
 

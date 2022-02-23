@@ -81,24 +81,26 @@ function runGeneration(autoplay, cb, critters, delay) {
 
 // kill the critters that didn't meet the selection criterion
 function runSelection() {
+	// first get rid of any empty spots (if a critter dies, it will leave an undefined entry)
+	let critters = sim.critters.filter(c => typeof c !== "undefined");
 	let filtered = [];
 
 	// no filter
-	// filtered = sim.critters;
+	// filtered = critters;
 
 	// SE nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y > opts.worldHeight * 2 / 3));
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y > opts.worldHeight * 2 / 3));
 	// NW nonant
-	filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth / 3 && critter.position.y < opts.worldHeight / 3));
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth / 3 && critter.position.y < opts.worldHeight / 3));
 	// NE nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
+	filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
 
 	// center nonant
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
 	// filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
 
 	// left and top edges
-	// filtered = filtered.concat(sim.critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
 	return filtered;
 }
@@ -126,12 +128,11 @@ function runReproduction(oldGen) {
 			let mom = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
 			let dad = temp.splice(Math.floor(Math.random() * temp.length), 1)[0];
 
-			// let kid = new Critter(canvas, opts, {
-			// 	genome : mom.fuck(dad)
-			// });
-
 			let kid = mom.fuck(dad);
 
+			// tell the new critter where it is in the array of critters
+			// and then add it
+			// kid.index = newGen.length;
 			newGen.push(kid);
 
 			// console.log('mom, dad, kid:');

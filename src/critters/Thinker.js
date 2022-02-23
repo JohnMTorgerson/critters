@@ -46,9 +46,22 @@ export default class Thinker extends Critter {
 			// and update this.position
 			super.move(this.position,newPosition);
     }
+
+		// we're returning the move object just so that when a child class
+		// calls this method, they can get the information about the move
+		return move;
 	}
 
 	senseAll() {
+		// throw error if numSensorTypes is not 1,
+		// since a baseline Thinker can only accept 1;
+		// to use more than one, extend the class, and store that number of values
+		// per loop through the sensoryNeurons (the idea being to detect different kinds of objects)
+		// so that the number of senses matches the number of input neurons (which is controlled by numSensorTypes)
+		if (typeof this.params.numSensorTypes !== "undefined" && this.params.numSensorTypes !== 1) {
+			throw Error("A baseline Thinker can only accept 1 sensor type; please set params.numSensorTypes to 1 or do not pass a value");
+		}
+
 		// gather the sensory input
 		let senses = [];
 		for (let i=0; i<this.genome.sensoryNeurons.length; i++) {
@@ -56,10 +69,13 @@ export default class Thinker extends Critter {
 			// or any information stored by any other object in the worldMatrix,
 			// we could use that information to sense different properties of those things, in principle;
 			// for now, though, we just return a 1 if anything is there (0 if not)
-			senses.push(this._sense(this.genome.sensoryNeurons[i]) !== null ? 1 : 0);
+			let thing = this._sense(this.genome.sensoryNeurons[i]);
+			senses.push(thing !== null ? 1 : 0);
 		}
 		// add updated, normalized x and y positions of the critter, and the constant
-		let x, y;
+		// (if x or y sensing is set to false, we just set the values at 0 so the neurons are never activated)
+		let x = 0;
+		let y = 0;
 		if (this.genome.internalParams.x) x = this.position.x / this.worldWidth * 2 - 1;
 		if (this.genome.internalParams.y) y = this.position.y / this.worldHeight * 2 - 1;
 		senses = senses.concat([this.genome.internalParams.constant,x,y]);
@@ -113,9 +129,15 @@ export default class Thinker extends Critter {
 		// console.log(spouse.brain.network);
 		// console.log(childGenome.brain.network);
 
-		return new Thinker(this.canvas, this.worldMatrix, this.gameOpts, {
-			genome : childGenome
-		});
+		let childParams = {...this.params};
+		childParams.genome = childGenome;
+
+		return this._birth(childParams);
+	}
+
+	// we separate this step into its own method so that each child class can return its own type
+	_birth(params) {
+		return new Thinker(this.canvas, this.worldMatrix, this.gameOpts, params);
 	}
 
 	showInspector() {
@@ -171,6 +193,9 @@ export default class Thinker extends Critter {
 		let numHiddenLayers = typeof this.params.numHiddenLayers !== "undefined" ? this.params.numHiddenLayers : 1; // number of hidden layers
 		let senseX = typeof this.params.senseX !== "undefined" ? this.params.senseX : true; // whether the critter can sense its absolute x position or not (boolean)
 		let senseY = typeof this.params.senseY !== "undefined" ? this.params.senseY : true; // whether the critter can sense its absolute y position or not (boolean)
+		let numSensorTypes = typeof this.params.numSensorTypes !== "undefined" ? this.params.numSensorTypes : 1; // the number of different objects the critter can distinguish (e.g. can it tell the difference between an obstacle and another critter?)
+
+		// console.log(`numSensorTypes == ${numSensorTypes}`);
 
 		// sensory neurons will contain a list of cells to sense
 		// each designated by an x and y coordinate relative to the critter's position
@@ -196,7 +221,7 @@ export default class Thinker extends Critter {
 		// in the future, we could implement distance vision and color sensing,
 		// as potential examples of more sophisticated sensory input
 		genome.brain = new NeuralNet({
-				inputNeurons: genome.sensoryNeurons.length + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
+				inputNeurons: (genome.sensoryNeurons.length * numSensorTypes) + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
 				hiddenNeurons: hiddenNeurons,
 				numHiddenLayers: numHiddenLayers
