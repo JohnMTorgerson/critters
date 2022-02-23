@@ -24,6 +24,13 @@ export default class Critter {
 			// if genome is not passed, create a blank object
 			this.genome = {};
 		}
+		if (typeof this.params.color === "string") {
+			this.color = this.params.color;
+		} else if (typeof this.genome.color === "string") {
+			this.color = this.genome.color;
+		} else {
+			this.color = "gray";
+		}
 
 		// add the position to the worldMatrix
 		this.updatePosition();
@@ -71,7 +78,7 @@ export default class Critter {
 		this.context.arc(this.cellSize * (this.position.x + 0.5), this.cellSize * (this.position.y + 0.5), this.cellSize / 2, 0, 2 * Math.PI, false);
 		this.context.closePath();
     if (typeof color === 'undefined') {
-      this.context.fillStyle = this.genome.color;
+      this.context.fillStyle = this.color;
     } else {
       this.context.fillStyle = color;
     }

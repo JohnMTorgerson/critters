@@ -11,11 +11,12 @@ let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
   numCritters : 500, // number of critters in each generation
-	numSteps : 150, // number of simulator steps each generation will last
+	numSteps : 300, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
 	autoplay : true, // whether to start each new generation automatically rather than pause between generations
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
-	weightMutationAmount : 0.1 // mutation amount added or subtracted to the weight of each gene every reproduction
+	weightMutationAmount : 0.1, // mutation amount added or subtracted to the weight of each gene every reproduction
+	preyPredatorRatio: 10 // for predator-prey scenarios, the number of prey critters per predator critters
 }
 opts.worldWidth = Math.round(canvas.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
 opts.worldHeight = Math.round(canvas.height / opts.cellSize); // height of the canvas in cells (rather than in pixels)
@@ -33,8 +34,10 @@ function main(critters) {
 			return;
 		}
 
-		console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
-		let offspring = runReproduction(survivors);
+		// console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
+
+		// let offspring = runReproduction(survivors);
+		let offspring = runPredPreyReproduction(survivors);
 		generation++;
 		// console.log('Selected and reproduced!');
 
@@ -93,7 +96,7 @@ function runSelection() {
 	// NW nonant
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth / 3 && critter.position.y < opts.worldHeight / 3));
 	// NE nonant
-	filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
 
 	// center nonant
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
@@ -102,10 +105,21 @@ function runSelection() {
 	// left and top edges
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
+	// Predator/Prey specific filter rules:
+	// let predators = critters.filter(c => c.constructor.name === "Predator"); // keep all predators; no selection pressure
+	let predators = critters.filter(c => c.constructor.name === "Predator" && c.killCount > 0); // only keep predators who managed to kill at least one prey
+	predators.sort((a,b) => b.killCount - a.killCount); // sort the predators by kill count in descending order;
+	predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
+	// predators.map(p => {console.log(p.killCount)});
+	let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
+	filtered = [...predators, ...prey];
+
 	return filtered;
 }
 
-function runReproduction(oldGen) {
+function runReproduction(oldGen, numOffspring) {
+	if (typeof numOffspring === "undefined") numOffspring = opts.numCritters;
+
 	// before reproduction we have to empty the old simulator's worldMatrix
 	// because the offspring critters will inherit it, and need room to populate;
 	// later, when we run a new generation, we will create a new simulator,
@@ -121,7 +135,7 @@ function runReproduction(oldGen) {
 	// loop through all the critters, pairing them up as many times as necessary
 	// to fill up the number of critters we want
 	// (since each pairing only produces one child, we loop around as many times as needed)
-	while (newGen.length < opts.numCritters) {
+	while (newGen.length < numOffspring) {
 		// loop through all the critters, pairing them up randomly to create a single child
 		let temp = [...oldGen]; // this shallow copy is fine, since we're not altering the critters
 		for (let i=0, halfLen = Math.floor(temp.length / 2); i < halfLen; i++) {
@@ -146,11 +160,24 @@ function runReproduction(oldGen) {
 
 	// now newGen.length should be >= the number of critters we want,
 	// so trim it down to exactly the number we want
-	newGen.splice(opts.numCritters);
+	newGen.splice(numOffspring);
 
 	// console.log('newGen length after trim: ' + newGen.length);
 
 	return newGen;
+}
+
+// special reproduction function just for predator/prey scenarios
+function runPredPreyReproduction(oldGen) {
+	let numPreds = Math.ceil(opts.numCritters / opts.preyPredatorRatio);
+	let numPrey = opts.numCritters - numPreds;
+
+	let predParents = oldGen.filter(c => c.constructor.name === "Predator");
+	let preyParents = oldGen.filter(c => c.constructor.name === "Prey");
+
+	console.log(`Gen ${generation} (prey) survivors: ${preyParents.length} (${Math.round(preyParents.length / numPrey * 1000)/10}%)`);
+
+	return runReproduction(predParents, numPreds).concat(runReproduction(preyParents,numPrey));
 }
 
 function drawObstacles() {
@@ -164,10 +191,10 @@ function drawObstacles() {
 	// context.fillStyle = 'gray';
 	// context.fill();
 
-	context.beginPath();
-	context.rect(165, 165, 165, 165);
-	context.fillStyle = 'gray';
-	context.fill();
+	// context.beginPath();
+	// context.rect(165, 165, 165, 165);
+	// context.fillStyle = 'gray';
+	// context.fill();
 	//
 	// context.beginPath();
 	// context.rect(300, 100, 100, 100);

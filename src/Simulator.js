@@ -235,25 +235,27 @@ export default class Simulator {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
 			let critter;
 
-			// if (i%2 === 0) {
+			if (i%this.opts.preyPredatorRatio === 0) {
 				critter = new Predator(this.canvas, this.worldMatrix, this.opts, {
 					index: i,
-					sensoryRadius : 1, // how many cells out the critter can sense;
-					hiddenNeurons : 5, // number of hidden neurons
+					color: "red",
+					sensoryRadius : 2, // how many cells out the critter can sense;
+					hiddenNeurons : 10, // number of hidden neurons
 					numHiddenLayers : 1, // number of hidden layers
 					senseX : false, // whether the critter can sense its absolute x position or not (boolean)
 					senseY : false // whether the critter can sense its absolute y position or not (boolean)
 				});
-			// } else {
-			// 	critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
-			// 		index: i,
-			// 		sensoryRadius : 2, // how many cells out the critter can sense;
-			// 		hiddenNeurons : 10, // number of hidden neurons
-			// 		numHiddenLayers : 1, // number of hidden layers
-			// 		senseX : false, // whether the critter can sense its absolute x position or not (boolean)
-			// 		senseY : false // whether the critter can sense its absolute y position or not (boolean)
-			// 	});
-			// }
+			} else {
+				critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
+					index: i,
+					color: "cyan",
+					sensoryRadius : 3, // how many cells out the critter can sense;
+					hiddenNeurons : 10, // number of hidden neurons
+					numHiddenLayers : 1, // number of hidden layers
+					senseX : false, // whether the critter can sense its absolute x position or not (boolean)
+					senseY : false // whether the critter can sense its absolute y position or not (boolean)
+				});
+			}
 
 			critter.draw();
 			this.critters.push(critter);
