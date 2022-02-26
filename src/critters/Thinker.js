@@ -12,7 +12,7 @@ export default class Thinker extends Critter {
 			this.genome = this._randomGenome();
 		}
 
-		this.brain = this.genome.brain;
+		// this.brain = this.genome.brain;
 
 	}
 
@@ -25,7 +25,7 @@ export default class Thinker extends Critter {
 		// run neural network; will return the index of the winning output neuron
 		// currently, we're setting that up to correspond to an 'action',
 		// as used in the Bouncer class;
-		let action = this.brain.think(senses) + 1; // should be an integer 0-8, or null if no output neuron was chosen
+		let action = this.genome.brain.think(senses) + 1; // should be an integer 0-8, or null if no output neuron was chosen
 		if (action == null) action = 0; // if no output neuron was chosen, we'll just stay in place
 		// console.log('winning move direction: ' + action);
 		let move = this._getTranslation(action);
@@ -91,19 +91,21 @@ export default class Thinker extends Critter {
 	// returns an offspring critter with mixed, mutated genome;
 	fuck(spouse) {
 		let childGenome = this._randomGenome();
-		let coinflip = () => Math.floor(Math.random() * 2); // coin flip (0 or 1)
+		let coinflip = () => (Math.floor(Math.random() * 2) * 2) - 1; // coin flip (-1 or 1)
 
 		// recombination of neural network
 		childGenome.brain.network = childGenome.brain.network.map((layer, indexL) => {
+
 			layer.weights = layer.weights.map((neuron, indexN) => {
-				let parent = coinflip() === 0 ? this.brain : spouse.brain;
+				let parent = coinflip() === 1 ? this.genome.brain : spouse.genome.brain;
 				return parent.network[indexL].weights[indexN].map((weight) => {
 					// set to a completely random value every so often per the mutation rate
 					if (Math.random() < this.gameOpts.actionMutationRate) {
-						return Math.random() * 2 - 1;
+						return this.genome.brain.randWeight(layer.weights.length);
 					}
 					// the rest of the time, adjust the weight up or down by a tiny amount
-					return Math.min(Math.max(weight * (1 + this.gameOpts.weightMutationAmount * (2 * coinflip() - 1)),-1),1);
+					return weight + (this.gameOpts.weightMutationAmount/Math.pow(layer.weights.length,0.5) * coinflip());// * (2 * Math.random() - 1));
+					// return Math.min(Math.max(weight * (1 + this.gameOpts.weightMutationAmount * coinflip()),-1),1);
 				});
 
 				// let parentMatrix = parent.network[indexL].weights;
@@ -115,6 +117,22 @@ export default class Thinker extends Critter {
 				// 	}
 				// });
 			});
+
+			layer.biases = layer.biases.map((bias,indexB) => {
+				if (indexL === 0) return 0; // input layer doesn't have biases
+
+				// set to a completely random value every so often per the mutation rate
+				if (Math.random() < this.gameOpts.actionMutationRate) {
+					return this.genome.brain.randBias();
+				}
+
+				let parent = coinflip() === 0 ? this.genome.brain : spouse.genome.brain;
+				bias = parent.network[indexL].biases[indexB];
+
+				// the rest of the time, adjust the weight up or down by a tiny amount
+				return bias + (this.gameOpts.biasMutationAmount * Math.random() * coinflip());
+			});
+
 			return layer;
 		});
 
@@ -125,8 +143,8 @@ export default class Thinker extends Critter {
 		});
 
 		// console.log('self, spouse, offspring:');
-		// console.log(this.brain.network);
-		// console.log(spouse.brain.network);
+		// console.log(this.genome.brain.network);
+		// console.log(spouse.genome.brain.network);
 		// console.log(childGenome.brain.network);
 
 		let childParams = {...this.params};

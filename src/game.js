@@ -11,11 +11,12 @@ let generation = 0;
 let opts = {
 	cellSize : 5, // size of each creature/cell in the grid
   numCritters : 500, // number of critters in each generation
-	numSteps : 300, // number of simulator steps each generation will last
+	numSteps : 200, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
 	autoplay : true, // whether to start each new generation automatically rather than pause between generations
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
-	weightMutationAmount : 0.1, // mutation amount added or subtracted to the weight of each gene every reproduction
+	weightMutationAmount : 0.001, // mutation amount added or subtracted to the weight of each gene every reproduction
+	biasMutationAmount : 0.005, // mutation amount added or subtracted to the bias of each neuron every reproduction
 	preyPredatorRatio: 10 // for predator-prey scenarios, the number of prey critters per predator critters
 }
 opts.worldWidth = Math.round(canvas.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
@@ -34,10 +35,10 @@ function main(critters) {
 			return;
 		}
 
-		// console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
+		console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
 
-		// let offspring = runReproduction(survivors);
-		let offspring = runPredPreyReproduction(survivors);
+		let offspring = runReproduction(survivors);
+		// let offspring = runPredPreyReproduction(survivors);
 		generation++;
 		// console.log('Selected and reproduced!');
 
@@ -61,14 +62,15 @@ function runGeneration(autoplay, cb, critters, delay) {
 	// instantiate global Simulator object
 	// (which will create its own new empty worldMatrix
 	// and bind any critters passed to it to the new worldMatrix)
+	// if critters is undefined, the simulator will create its own initial population
 	sim = new Simulator(canvas, opts, cb, critters);
 	if (typeof delay !== "undefined")	sim._delay = delay; // keep the user's speed setting from the previous generation, if applicable
 
-	if (typeof critters === "undefined") {
-		// if we weren't passed a population of critters,
-		// create initial population (with random genomes)
-		sim.populateInitial();
-	}
+	// if (typeof critters === "undefined") {
+	// 	// if we weren't passed a population of critters,
+	// 	// create initial population (with random genomes)
+	// 	sim.populateInitial();
+	// }
 
 	// set keyboard events
 	window.removeEventListener("keydown", addKeyboardEvents, false); // remove any old listeners
@@ -99,20 +101,22 @@ function runSelection() {
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
 
 	// center nonant
-	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
-	// filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
+	filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
+	filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
 
 	// left and top edges
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
-	// Predator/Prey specific filter rules:
-	// let predators = critters.filter(c => c.constructor.name === "Predator"); // keep all predators; no selection pressure
-	let predators = critters.filter(c => c.constructor.name === "Predator" && c.killCount > 0); // only keep predators who managed to kill at least one prey
-	predators.sort((a,b) => b.killCount - a.killCount); // sort the predators by kill count in descending order;
-	predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
-	// predators.map(p => {console.log(p.killCount)});
-	let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
-	filtered = [...predators, ...prey];
+	// ========= Predator/Prey specific filter rules: ============= //
+
+	// // let predators = critters.filter(c => c.constructor.name === "Predator"); // keep all predators; no selection pressure
+	// let predators = critters.filter(c => c.constructor.name === "Predator" && c.killCount > 0); // only keep predators who managed to kill at least one prey
+	// predators.sort((a,b) => b.killCount - a.killCount); // sort the predators by kill count in descending order;
+	// predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
+	// // predators.map(p => {console.log(p.killCount)});
+	// let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
+	//
+	// filtered = [...predators, ...prey];
 
 	return filtered;
 }
@@ -266,5 +270,10 @@ function addClickEvents(e) {
 
 
 window.onload = function() {
+	document.getElementById("save-btn").addEventListener("click", (e) => {
+		sim.savePop();
+	}, false);
+
+
 	main();
 };

@@ -97,8 +97,12 @@ export default class Simulator {
 				c.draw();
 			});
 		} else {
-			this.critters = [];
+			// if we were not passed a population of critters, create one
+			// with random genomes
+			this.populateInitial();
 		}
+
+		this.initialCritters = [...this.critters]; // save a duplicate of the critter population before the sim begins, in case the user wants to save it
 	}
 
 	// ******** Control methods ******** //
@@ -235,36 +239,42 @@ export default class Simulator {
 			// create new critter; if we don't pass a genome or position in a params object, the critter will be created with a random one of each
 			let critter;
 
-			if (i%this.opts.preyPredatorRatio === 0) {
-				critter = new Predator(this.canvas, this.worldMatrix, this.opts, {
-					index: i,
-					color: "red",
-					sensoryRadius : 2, // how many cells out the critter can sense;
-					hiddenNeurons : 10, // number of hidden neurons
-					numHiddenLayers : 1, // number of hidden layers
-					senseX : false, // whether the critter can sense its absolute x position or not (boolean)
-					senseY : false // whether the critter can sense its absolute y position or not (boolean)
-				});
-			} else {
-				critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
-					index: i,
-					color: "cyan",
-					sensoryRadius : 3, // how many cells out the critter can sense;
-					hiddenNeurons : 10, // number of hidden neurons
-					numHiddenLayers : 1, // number of hidden layers
-					senseX : false, // whether the critter can sense its absolute x position or not (boolean)
-					senseY : false // whether the critter can sense its absolute y position or not (boolean)
-				});
-			}
+			critter = new Thinker(this.canvas, this.worldMatrix, this.opts, {
+				index: i,
+				color: "red",
+				sensoryRadius : 1, // how many cells out the critter can sense;
+				hiddenNeurons : 5, // number of hidden neurons
+				numHiddenLayers : 1, // number of hidden layers
+				senseX : true, // whether the critter can sense its absolute x position or not (boolean)
+				senseY : true // whether the critter can sense its absolute y position or not (boolean)
+			});
+
+			// if (i%this.opts.preyPredatorRatio === 0) {
+			// 	critter = new Predator(this.canvas, this.worldMatrix, this.opts, {
+			// 		index: i,
+			// 		color: "red",
+			// 		sensoryRadius : 2, // how many cells out the critter can sense;
+			// 		hiddenNeurons : 5, // number of hidden neurons
+			// 		numHiddenLayers : 0, // number of hidden layers
+			// 		senseX : true, // whether the critter can sense its absolute x position or not (boolean)
+			// 		senseY : true // whether the critter can sense its absolute y position or not (boolean)
+			// 	});
+			// } else {
+			// 	critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
+			// 		index: i,
+			// 		color: "cyan",
+			// 		sensoryRadius : 3, // how many cells out the critter can sense;
+			// 		hiddenNeurons : 20, // number of hidden neurons
+			// 		numHiddenLayers : 2, // number of hidden layers
+			// 		senseX : true, // whether the critter can sense its absolute x position or not (boolean)
+			// 		senseY : true // whether the critter can sense its absolute y position or not (boolean)
+			// 	});
+			// }
 
 			critter.draw();
 			this.critters.push(critter);
 		}
 
-		// draw initial position of all the bodies
-		// for (var i=0; i<this.critters.length; i++) {
-		// 	this.critters[i].draw();
-		// }
 	}
 
 	stopSim() {
@@ -286,6 +296,26 @@ export default class Simulator {
 		for (let row=0; row<this.worldMatrix.length; row++) {
 			this.worldMatrix[row].fill(null);
 		}
+	}
+
+	savePop() {
+		// this.pause();
+
+		// save some metadata to the file (timestamp, perhaps number of generations?)
+
+		for (let critter of this.initialCritters) {
+			if (typeof critter.params.genome === "undefined") critter.params.genome = critter.genome; // the first generation of critters will not have a genome passed in params
+			// console.log(JSON.stringify({
+			// 	type: critter.constructor.name,
+			// 	params: critter.params
+			// }));
+			// save the critter's params to a file
+			// along with class name
+		}
+
+		console.log(this.initialCritters[0]);
+
+		alert('Saved!');
 	}
 
 }

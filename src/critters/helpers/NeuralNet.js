@@ -26,14 +26,16 @@ export default class NeuralNet {
 		// console.log(numNeurons);
 
 		// the network will be represented by an array, one element for each layer;
-		// each layer will consist of an object containing a values matrix and a weights matrix
-		// (the output layer will not contain a weight matrix);
+		// each layer will consist of an object containing a values matrix, a weights matrix, and a biases matrix
+		// (the input layer's bias matrix will be empty)
+		// (the output layer's weight matrix will be empty);
 		// the values matrix is a 1-dimensional matrix with one value for each neuron in that layer;
 		// the weights matrix is 2-d, containing each weight connecting each neuron to every neuron in the next layer
+		// the biases matrix is 1-d, one bias for each neuron in that layer
 		this.network = [];
 
 		// create a random neural network
-		// loop through each layer, creating the 'layer' object containing both values and weights for that layer
+		// loop through each layer, creating the 'layer' object containing values and weights and biases for that layer
 		for(let i=0; i<this.numLayers; i++) {
 			let layer = {
 				values: math.zeros(numNeurons[i]), //math.matrix(Array.from({length: numNeurons[i]}, () => Math.random())), // 1-d matrix with random values for each neuron in this layer
@@ -43,10 +45,11 @@ export default class NeuralNet {
 					// fill with random values, representing the weights of the connections between layers for each neuron
 					let matrix = [];
 					for (let j=0; j<numNeurons[i]; j++) {
-						matrix.push(Array.from({length: numNeurons[i+1]}, () => 2 * Math.random() - 1 ));
+						matrix.push(Array.from({length: numNeurons[i+1]}, () => this.randWeight(numNeurons[i]))); // randWeight() uses normal distribution and divides by sqrt of number of input neurons to keep values in a good range
 					}
 					return matrix;
-				})()
+				})(),
+				biases: Array.from({length: numNeurons[i]}, () => this.randBias())
 			}
 			this.network.push(layer);
 		}
@@ -69,14 +72,21 @@ export default class NeuralNet {
 			let unnormalized = math.multiply(this.network[i].values, this.network[i].weights);
 			// then normalize the values
 			let normalized = unnormalized.map((value, index, matrix) => {
-				// normalize to within 0 and 1,
+				// first, add the bias
+				let normV = value + this.network[i+1].biases[index];
+
+				// normalize to within 0 and 1 using sigmoid function
+				normV = (Math.tanh(normV) + 1) / 2;
+
 				// and (except for the final layer) convert to discrete values, either 0 or 1
-				let normV = (Math.tanh(value) + 1) / 2;
-				if (i < this.network.length-2) {
-					normV = Math.round(normV); // intermediate layers should either be 0 or 1
-				}
+				// if (i < this.network.length-2) {
+				// 	normV = Math.round(normV); // intermediate layers should either be 0 or 1
+				// }
+
+
 				return normV;
 			});
+
 			// assign the normalized values to the next layer
 			this.network[i+1].values = normalized;
 		}
@@ -95,7 +105,10 @@ export default class NeuralNet {
 			// 	highestNeuron = neuron;
 			// }
 
-			choices = choices.concat(Array.from(Array(Math.floor(Math.pow(value,2) * 100)), () => neuron));
+			// set lower threshold
+			if (value < 0.5) return;
+
+			choices = choices.concat(Array.from(Array(Math.floor(Math.pow(Math.max(value,0),3) * 10)), () => neuron));
 		});
 
 		// console.log("output layer: " + outputLayer.values);
@@ -128,4 +141,23 @@ export default class NeuralNet {
 	// getWeight(layer, index) {
 	// 	return this.network[layer].weights.subset(math.index(index));
 	// }
+
+	randWeight(numNeurons) {
+		return this._gaussianRand(4) / Math.pow(numNeurons,0.5);
+	}
+
+	randBias() {
+		return this._gaussianRand(1);
+	}
+
+	_gaussianRand(width) {
+		let factor = 10;
+	  let rand = 0;
+
+	  for (let i=0; i<factor; i++) {
+	    rand += Math.random();
+	  }
+
+	  return (rand/factor * width) - (width/2);
+	}
 }

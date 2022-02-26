@@ -19,18 +19,18 @@ export default class NetWidget {
 		// update inputs to current position;
 		// when the simulation is paused, we need to manually
 		// sense the next step to see where the next move will be
-		this.critter.brain.think(this.critter.senseAll());
+		this.critter.genome.brain.think(this.critter.senseAll());
 
 		// create diagram for each neuron, which will contain
 		// that neuron's x and y coordinates and size on the canvas
 		// (as well as its value and weights)
 		this.diagram = [];
-    for (let i=0; i<this.critter.brain.network.length; i++) {
-      let networkLayer = this.critter.brain.network[i];
+    for (let i=0; i<this.critter.genome.brain.network.length; i++) {
+      let networkLayer = this.critter.genome.brain.network[i];
       let layerLength = networkLayer.weights.length;
 			let spacing = this.canvas.width/(layerLength+1);
       let neurY = this.vSpacing * (i+1);
-			let finalLayer = i === this.critter.brain.network.length-1; // boolean for if this is the final (output) layer
+			let finalLayer = i === this.critter.genome.brain.network.length-1; // boolean for if this is the final (output) layer
 
 			let diagramLayer = [];
 			networkLayer.values.map((value, index) => {
@@ -82,7 +82,7 @@ export default class NetWidget {
 
 			// loop through each neuron of this layer
 			for (let neuron of layer) {
-				let rgb = this.color(neuron.value);
+				let rgb = this.color(Math.pow(neuron.value,1));
 				let fillColor = this.colorString(rgb);
 				let strokeColor = 'rgba(0,0,0,0)';
 
@@ -101,11 +101,12 @@ export default class NetWidget {
 						let nextLayer = this.diagram[l+1];
 
 						if(typeof nextLayer !== "undefined") {
+							let width = Math.min(30,Math.abs(weight * 5) * 30);
 							this.context.beginPath();
 							this.context.moveTo(neuron.x, neuron.y);
 							this.context.lineTo(nextLayer[w].x, nextLayer[w].y);
-							this.context.lineWidth = Math.abs(Math.pow(weight,2)) * 30;
-							this.context.strokeStyle = this.colorString(weight, 0.7);
+							this.context.lineWidth = width;
+							this.context.strokeStyle = this.colorString(weight*width, 0.7);
 							this.context.stroke();
 						}
 					}
