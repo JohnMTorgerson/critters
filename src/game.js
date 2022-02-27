@@ -1,26 +1,33 @@
 import Simulator from './Simulator.js';
 import Critter from './critters/Critter.js';
+const { ipcRenderer } = require('electron');
+
 
 // declare the global Simulator object
 let sim;
 let canvas = document.getElementById("sim-canvas");
-canvas.width = 500;
-canvas.height = 500;
 let context = canvas.getContext("2d");
 let generation = 0;
 let opts = {
+	canvasSize : {
+		width:  500,
+		height: 500
+	},
 	cellSize : 5, // size of each creature/cell in the grid
-  numCritters : 500, // number of critters in each generation
+  numCritters : 800, // number of critters in each generation
 	numSteps : 200, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
 	autoplay : true, // whether to start each new generation automatically rather than pause between generations
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
 	weightMutationAmount : 0.001, // mutation amount added or subtracted to the weight of each gene every reproduction
 	biasMutationAmount : 0.005, // mutation amount added or subtracted to the bias of each neuron every reproduction
-	preyPredatorRatio: 10 // for predator-prey scenarios, the number of prey critters per predator critters
+	preyPredatorRatio: 8 // for predator-prey scenarios, the number of prey critters per predator critters
 }
-opts.worldWidth = Math.round(canvas.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
-opts.worldHeight = Math.round(canvas.height / opts.cellSize); // height of the canvas in cells (rather than in pixels)
+opts.worldWidth = Math.round(opts.canvasSize.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
+opts.worldHeight = Math.round(opts.canvasSize.height / opts.cellSize); // height of the canvas in cells (rather than in pixels)
+
+canvas.width = opts.canvasSize.width;
+canvas.height = opts.canvasSize.height;
 
 function main(critters) {
 	// this is simply to keep the user-set speed between generations
@@ -35,10 +42,10 @@ function main(critters) {
 			return;
 		}
 
-		console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
+		// console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
 
-		let offspring = runReproduction(survivors);
-		// let offspring = runPredPreyReproduction(survivors);
+		// let offspring = runReproduction(survivors);
+		let offspring = runPredPreyReproduction(survivors);
 		generation++;
 		// console.log('Selected and reproduced!');
 
@@ -101,22 +108,22 @@ function runSelection() {
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x > opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight / 3));
 
 	// center nonant
-	filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
-	filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
+	// filtered = filtered.concat(critters.filter(critter => critter.position.x < opts.worldWidth * 2 / 3 && critter.position.y < opts.worldHeight * 2 / 3));
+	// filtered = filtered.filter(critter => critter.position.x > opts.worldWidth / 3 && critter.position.y > opts.worldHeight / 3);
 
 	// left and top edges
 	// filtered = filtered.concat(critters.filter(critter => critter.position.x < 50 || critter.position.y < 50));
 
 	// ========= Predator/Prey specific filter rules: ============= //
 
-	// // let predators = critters.filter(c => c.constructor.name === "Predator"); // keep all predators; no selection pressure
-	// let predators = critters.filter(c => c.constructor.name === "Predator" && c.killCount > 0); // only keep predators who managed to kill at least one prey
-	// predators.sort((a,b) => b.killCount - a.killCount); // sort the predators by kill count in descending order;
-	// predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
-	// // predators.map(p => {console.log(p.killCount)});
-	// let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
-	//
-	// filtered = [...predators, ...prey];
+	// let predators = critters.filter(c => c.constructor.name === "Predator"); // keep all predators; no selection pressure
+	let predators = critters.filter(c => c.constructor.name === "Predator" && c.killCount > 0); // only keep predators who managed to kill at least one prey
+	predators.sort((a,b) => b.killCount - a.killCount); // sort the predators by kill count in descending order;
+	predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
+	// predators.map(p => {console.log(p.killCount)});
+	let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
+
+	filtered = [...predators, ...prey];
 
 	return filtered;
 }
@@ -268,10 +275,68 @@ function addClickEvents(e) {
 	sim.click({x:e.clientX - rect.left, y:e.clientY - rect.top});
 }
 
+// save the current population of critters to a file
+async function saveSim() {
+	if (!sim || typeof sim.initialCritters === "undefined") {
+		alert('No critters found, unable to save');
+		return;
+	}
+
+	// initialCritters is the population of critters at the beginning of each generation, not the beginning of each simulation
+	let critters = sim.initialCritters;
+
+	let date = new Date();
+
+	// save some metadata to the file (timestamp, perhaps number of generations?)
+	// create json object to save
+	let data = {
+		gameOpts: opts,
+		generation: generation,
+		timestamp: date.getTime(),
+		critters: []
+	}
+
+	// as we loop through the critters, save the types to a set
+	let types = new Set();
+
+	for (let critter of critters) {
+		// we only need to save the params of each critter in order for them to be recreated,
+		// except the first generation of critters will not have a genome passed in params, so we add it manually
+		if (typeof critter.params.genome === "undefined") critter.params.genome = critter.genome;
+
+		// save the critter's params to the critters array in the data object
+		// along with class name
+		data.critters.push({
+			type: critter.constructor.name,
+			params: critter.params
+		});
+
+		types.add(critter.constructor.name)
+	}
+
+	// add the types of critters as an array to the data
+	data.types = Array.from(types);
+
+	const dateStr = `${date.getFullYear()}-${(date.getMonth()+1).toString().replace(/^(\d){1}$/,'0$1')}-${date.getDate().toString().replace(/^(\d){1}$/,'0$1')} ${date.getHours().toString().replace(/^(\d){1}$/,'0$1')}.${date.getMinutes().toString().replace(/^(\d){1}$/,'0$1')}.${date.getSeconds().toString().replace(/^(\d){1}$/,'0$1')}.${date.getMilliseconds().toString().replace(/^(\d){1}$/,'00$1').replace(/^(\d{2})$/,'0$1')}`;
+	const filename = `${dateStr} - (${Array.from(types).toString()}) - gen ${data.generation}`;
+
+	// save to file
+	const msg = await ipcRenderer.invoke('write-file', {
+		data: data,
+		filename: filename,
+		folder: 'saved_sims'
+	});
+
+	if (msg === 'success') console.log(`============== SAVE =================\n${date.toTimeString()} - saved simulation at generation ${data.generation}\n=====================================`);
+
+	alert(msg === 'success' ? `Saved simulation at generation ${data.generation}!` : msg);
+}
+
+
 
 window.onload = function() {
 	document.getElementById("save-btn").addEventListener("click", (e) => {
-		sim.savePop();
+		saveSim();
 	}, false);
 
 

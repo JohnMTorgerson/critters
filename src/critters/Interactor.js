@@ -9,7 +9,7 @@ export default class Interactor extends Thinker {
 	constructor(canvas, worldMatrix, gameOpts, params) {
 		// force numSensorTypes to be 3, as we will detect 3 types of things
 		// Obstacles/boundaries, Prey, and Predators
-		params.numSensorTypes = 3;
+		params.numSensorTypes = 4;
 		super(canvas, worldMatrix, gameOpts, params)
 
 	}
@@ -17,6 +17,7 @@ export default class Interactor extends Thinker {
 	senseAll() {
 		// gather the sensory input
 		let obstacleSensors = [];
+		let boundarySensors = [];
 		let preySensors = [];
 		let predatorSensors = [];
 		for (let i=0; i<this.genome.sensoryNeurons.length; i++) {
@@ -24,7 +25,8 @@ export default class Interactor extends Thinker {
 			// we use that information to sense several different kinds of things;
 			// so the critter can distinguish prey from walls and predators, etc.
 			let thing = this._sense(this.genome.sensoryNeurons[i]);
-			obstacleSensors.push((thing !== null && thing.constructor.name === 'Obstacle') || typeof thing === 'number' ? 1 : 0);
+			obstacleSensors.push(thing !== null && thing.constructor.name === 'Obstacle' ? 1 : 0);
+			boundarySensors.push(this !== null && typeof thing === 'number' ? 1 : 0);
 			preySensors.push(thing !== null && thing.constructor.name === 'Prey' ? 1 : 0);
 			predatorSensors.push(thing !== null && thing.constructor.name === 'Predator' ? 1 : 0);
 		}
@@ -37,8 +39,12 @@ export default class Interactor extends Thinker {
 		if (this.genome.internalParams.y) y = this.position.y / this.worldHeight * 2 - 1;
 		let otherSensors = [this.genome.internalParams.constant,x,y];
 
-		let senses = [...obstacleSensors, ...preySensors, ...predatorSensors, ...otherSensors];
+		let senses = [...obstacleSensors, ...boundarySensors, ...preySensors, ...predatorSensors, ...otherSensors];
 
 		return senses;
+	}
+
+	_birth(params) {
+		return new Interactor(this.canvas, this.worldMatrix, this.gameOpts, params);
 	}
 }

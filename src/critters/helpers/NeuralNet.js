@@ -79,9 +79,9 @@ export default class NeuralNet {
 				normV = (Math.tanh(normV) + 1) / 2;
 
 				// and (except for the final layer) convert to discrete values, either 0 or 1
-				// if (i < this.network.length-2) {
-				// 	normV = Math.round(normV); // intermediate layers should either be 0 or 1
-				// }
+				if (i < this.network.length-2) {
+					normV = Math.round(normV); // intermediate layers should either be 0 or 1
+				}
 
 
 				return normV;

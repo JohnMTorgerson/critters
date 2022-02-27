@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const rw = require('./readwrite.js')
 
 async function createWindow () {
   const win = new BrowserWindow({
@@ -31,3 +32,9 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+
+ipcMain.handle('write-file', async (event, stuff) => {
+  const {data, filename, folder} = stuff;
+  return rw.write(data,filename,folder);
+});
