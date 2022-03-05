@@ -49,7 +49,7 @@ export default class NeuralNet {
 					}
 					return matrix;
 				})(),
-				biases: Array.from({length: numNeurons[i]}, () => this.randBias())
+				biases: Array.from({length: numNeurons[i]}, () => 0)//this.randBias())
 			}
 			this.network.push(layer);
 		}
@@ -78,9 +78,13 @@ export default class NeuralNet {
 				// normalize to within 0 and 1 using sigmoid function
 				normV = (Math.tanh(normV) + 1) / 2;
 
+				// if (i===0) {
+				// 	console.log(`v: ${value}, bv: ${value + this.network[i+1].biases[index]}, nv: ${normV}`);
+				// }
+
 				// and (except for the final layer) convert to discrete values, either 0 or 1
 				if (i < this.network.length-2) {
-					normV = Math.round(normV); // intermediate layers should either be 0 or 1
+					normV = Math.round(normV - 0.000000001); // intermediate layers should either be 0 or 1
 				}
 
 
@@ -147,7 +151,7 @@ export default class NeuralNet {
 	}
 
 	randBias() {
-		return this._gaussianRand(1);
+		return this._gaussianRand(4);
 	}
 
 	_gaussianRand(width) {

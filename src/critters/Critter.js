@@ -2,16 +2,23 @@
 
 export default class Critter {
 	constructor(canvas, worldMatrix, gameOpts, params) {
+		// set worldMatrix
 		this.worldMatrix = worldMatrix;
-		if (typeof params === "undefined") params = {};
+
+		// set canvas
 		this.canvas = canvas;
+		this.context = this.canvas.getContext("2d");
+
+		// set game options
+		this.gameOpts = gameOpts;
     this.cellSize = gameOpts.cellSize;
 		this.worldWidth = gameOpts.worldWidth;
 		this.worldHeight = gameOpts.worldHeight;
-		this.context = this.canvas.getContext("2d");
+
+		// set critter parameters
+		if (typeof params === "undefined") params = {};
 		this.params = params;
-		this.gameOpts = gameOpts;
-		this.index = params.index
+		this.index = params.index;
 		if (typeof params.position === "object") {
 			this.position = params.position;
 		} else {
@@ -31,6 +38,8 @@ export default class Critter {
 		} else {
 			this.color = "gray";
 		}
+
+		this.stepCount = 0; // will increment every simulator step
 
 		// add the position to the worldMatrix
 		this.updatePosition();

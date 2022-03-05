@@ -224,8 +224,9 @@ export default class Simulator {
 
 	_displayValues() {
 		var speed = this._delay != 0 ? (this._defaultDelay || (this._minDelay/2)) / this._delay + 'x' : 'MAX';
-		document.getElementById('speed').innerHTML = 'Speed: ' + speed + ' (' + this._delay + 'ms delay)';
-		document.getElementById('numCritters').innerHTML = ' Critters: ' + this.numCritters;
+		document.getElementById('speed').innerHTML = `Speed: ${speed} (${this._delay}ms delay)`;
+		document.getElementById('num-critters').innerHTML = `Critters: ${this.numCritters}`;
+		document.getElementById('num-steps').innerHTML = `Steps per generation: ${this.numSteps}`;
 	}
 
 
@@ -246,17 +247,17 @@ export default class Simulator {
 			// 	sensoryRadius : 1, // how many cells out the critter can sense;
 			// 	hiddenNeurons : 6, // number of hidden neurons
 			// 	numHiddenLayers : 1, // number of hidden layers
-			// 	senseX : true, // whether the critter can sense its absolute x position or not (boolean)
-			// 	senseY : true // whether the critter can sense its absolute y position or not (boolean)
+			// 	senseX : false, // whether the critter can sense its absolute x position or not (boolean)
+			// 	senseY : false // whether the critter can sense its absolute y position or not (boolean)
 			// });
 
 			if (i%this.opts.preyPredatorRatio === 0) {
 				critter = new Predator(this.canvas, this.worldMatrix, this.opts, {
 					index: i,
 					color: "red",
-					sensoryRadius : 2, // how many cells out the critter can sense;
-					hiddenNeurons : 5, // number of hidden neurons
-					numHiddenLayers : 1, // number of hidden layers
+					sensoryRadius : 5, // how many cells out the critter can sense;
+					hiddenNeurons : 8, // number of hidden neurons
+					numHiddenLayers : 3, // number of hidden layers
 					senseX : true, // whether the critter can sense its absolute x position or not (boolean)
 					senseY : true // whether the critter can sense its absolute y position or not (boolean)
 				});
@@ -264,9 +265,9 @@ export default class Simulator {
 				critter = new Prey(this.canvas, this.worldMatrix, this.opts, {
 					index: i,
 					color: "cyan",
-					sensoryRadius : 3, // how many cells out the critter can sense;
-					hiddenNeurons : 10, // number of hidden neurons
-					numHiddenLayers : 2, // number of hidden layers
+					sensoryRadius : 5, // how many cells out the critter can sense;
+					hiddenNeurons : 8, // number of hidden neurons
+					numHiddenLayers : 3, // number of hidden layers
 					senseX : true, // whether the critter can sense its absolute x position or not (boolean)
 					senseY : true // whether the critter can sense its absolute y position or not (boolean)
 				});
@@ -365,6 +366,9 @@ function runStep() {
 		var critter = this.critters[i];
 
 		if (typeof critter !== "undefined") {
+			// increment the critter's step counter
+			critter.stepCount++;
+
 			// tell the critter to make a move
 			let message = critter.move();
 

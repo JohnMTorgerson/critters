@@ -2,14 +2,22 @@
 import Critter from './Critter.js'
 import NeuralNet from './helpers/NeuralNet.js';
 import MindReader from '../inspector/MindReader.js';
+const _ = require('lodash');
 
 export default class Thinker extends Critter {
 	constructor(canvas, worldMatrix, gameOpts, params) {
 		super(canvas, worldMatrix, gameOpts, params)
 
+		this.angularRes = this.params.angularRes || 8; // angular resolution of sensory information
+
 		// if we weren't given a genome, create a random one
 		if (typeof this.genome === "undefined" || Object.keys(this.genome).length === 0) {
 			this.genome = this._randomGenome();
+		} else {
+			// this just makes sure the genome is 'live',
+			// i.e. that its brain is a live instance of NeuralNet
+			// (which isn't the case when resurrecting a critter from a saved sim)
+			this.genome = this._givenGenome(this.genome);
 		}
 
 		// this.brain = this.genome.brain;
@@ -76,9 +84,11 @@ export default class Thinker extends Critter {
 		// (if x or y sensing is set to false, we just set the values at 0 so the neurons are never activated)
 		let x = 0;
 		let y = 0;
+		let osc = 0;
 		if (this.genome.internalParams.x) x = this.position.x / this.worldWidth * 2 - 1;
 		if (this.genome.internalParams.y) y = this.position.y / this.worldHeight * 2 - 1;
-		senses = senses.concat([this.genome.internalParams.constant,x,y]);
+		if (this.genome.internalParams.osc.on) osc = (this.stepCount % this.genome.internalParams.osc.period) / (this.genome.internalParams.osc.period - 1);
+		senses = senses.concat([x,y,osc]);
 		// console.log('------------------');
 		// console.log(`x:${this.position.x/this.cellSize + .5}, y:${this.position.y/this.cellSize + .5}`);
 		// console.log('senses: ' + senses);
@@ -126,7 +136,7 @@ export default class Thinker extends Critter {
 					return this.genome.brain.randBias();
 				}
 
-				let parent = coinflip() === 0 ? this.genome.brain : spouse.genome.brain;
+				let parent = coinflip() === 1 ? this.genome.brain : spouse.genome.brain;
 				bias = parent.network[indexL].biases[indexB];
 
 				// the rest of the time, adjust the weight up or down by a tiny amount
@@ -196,7 +206,7 @@ export default class Thinker extends Critter {
 		// to a value or function contained within internalParams
 		return {
 			brain: null, // brain will contain an instance of a NeuralNet
-			sensoryNeurons: [],
+			sensoryInputs: [],
 			internalParams: {}
 		};
 	}
@@ -207,10 +217,13 @@ export default class Thinker extends Critter {
 
 		// first, set some parameters for the genome;
 		let radius = typeof this.params.sensoryRadius !== "undefined" ? this.params.sensoryRadius : 1; // how many cells out the critter can sense;
+		// let angularRes = typeof this.params.angularRes !== "undefined" ? this.params.angularRes : 8; // how many spatial input neurons there will be (corresponding to how many angular chunks to split the sensory circle into)
 		let hiddenNeurons = typeof this.params.hiddenNeurons !== "undefined" ? this.params.hiddenNeurons : 5; // number of hidden neurons
 		let numHiddenLayers = typeof this.params.numHiddenLayers !== "undefined" ? this.params.numHiddenLayers : 1; // number of hidden layers
 		let senseX = typeof this.params.senseX !== "undefined" ? this.params.senseX : true; // whether the critter can sense its absolute x position or not (boolean)
 		let senseY = typeof this.params.senseY !== "undefined" ? this.params.senseY : true; // whether the critter can sense its absolute y position or not (boolean)
+		let oscOn = typeof this.params.oscOn === "boolean" ? this.params.oscOn : true; // whether to include an internal oscillator among the critter's inputs
+		let oscPeriod = Number.isFinite(this.params.oscPeriod) ? Math.max(this.params.oscPeriod,2) : 10; // 2 is the minimum oscillator period, default is 10
 		let numSensorTypes = typeof this.params.numSensorTypes !== "undefined" ? this.params.numSensorTypes : 1; // the number of different objects the critter can distinguish (e.g. can it tell the difference between an obstacle and another critter?)
 
 		// console.log(`numSensorTypes == ${numSensorTypes}`);
@@ -221,25 +234,23 @@ export default class Thinker extends Critter {
 		for (let y=0-radius; y<=radius; y++) {
 			for (let x=0-radius; x<=radius; x++) {
 				if (Math.round(Math.sqrt(Math.pow(x,2) + Math.pow(y,2))) <= radius) {
-					if (x!==0 || y!==0) genome.sensoryNeurons.push({x:x,y:y});
+					if (x!==0 || y!==0) genome.sensoryInputs.push({x:x,y:y});
 				}
 			}
 		}
 		// console.log(genome.sensoryNeurons);
 
 		genome.internalParams = {
-			constant: 1,
 			x: senseX,
-			y: senseY
+			y: senseY,
+			osc: {
+				on: oscOn,
+				period: oscPeriod
+			}
 		};
-		// genome.internalParams.push(Math.random()); // a random constant to motivate movement in the absence of sensory input
-		//genome.internalParams.push(...); // in the future we could implement some kind of oscillator here, perhaps
 
-		// currently we only use 8 sensory neurons, one for each adjacent cell (true or false, depending on if it is occupied)
-		// in the future, we could implement distance vision and color sensing,
-		// as potential examples of more sophisticated sensory input
 		genome.brain = new NeuralNet({
-				inputNeurons: (genome.sensoryNeurons.length * numSensorTypes) + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
+				inputNeurons: (this.angularRes * numSensorTypes) + Object.keys(genome.internalParams).length, // the first group are for sensing, the rest determined by the genome's internal params
 				outputNeurons: 8, // 8 output neurons correspond to the 8 possible cells the critter can move to
 				hiddenNeurons: hiddenNeurons,
 				numHiddenLayers: numHiddenLayers
@@ -253,6 +264,27 @@ export default class Thinker extends Critter {
 
 		// console.log(genome);
 
+		return genome;
+	}
+
+	// checks if genome.brain is a live instance of NeuralNet,
+	// and if it isn't, makes it one;
+	// this is currently not necessary when two critters fuck and create a child,
+	// because the child critter's genome is created with a live NeuralNet,
+	// but it is currently necessary when reviving a critter from a saved sim,
+	// in which case the genome is saved as a JSON object (no NeuralNet instance)
+	_givenGenome(genome) {
+		if (!(genome.brain instanceof NeuralNet)) {
+			// we make a new one, and in doing so, we are using the info from the critter's params,
+			// not from the given genome; this is okay; if the given genome doesn't have the same features/params/dimensions
+			// as the params given to this critter, then something went wrong somewhere else, because it's supposed to;
+			// so we can assume they are the same here;
+
+			// we create the new genome and then replace its network with the given one
+			let tempGenome = this._randomGenome();
+			tempGenome.brain.network = _.cloneDeep(genome.brain.network);
+			genome = tempGenome;
+		}
 		return genome;
 	}
 }

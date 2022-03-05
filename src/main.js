@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const rw = require('./readwrite.js')
 
@@ -37,4 +37,25 @@ app.on('window-all-closed', () => {
 ipcMain.handle('write-file', async (event, stuff) => {
   const {data, filename, folder} = stuff;
   return rw.write(data,filename,folder);
+});
+
+ipcMain.handle('select-sim', async (event) => {
+  let options = {
+    title: 'Open Saved Simulation',
+    filters: {json:['json']},
+    defaultPath: path.join(app.getPath('userData'),'saved_sims'),
+    properties: ['openFile']
+  };
+  let result;
+  try {
+    result = await dialog.showOpenDialog(null, options);
+    if (!result.canceled) {
+      return rw.read(result.filePaths[0]);
+    } else {
+      return 'Canceled'
+    }
+  } catch(err) {
+    console.log(err);
+    return err.toString();
+  }
 });

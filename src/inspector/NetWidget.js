@@ -58,7 +58,7 @@ export default class NetWidget {
 				// just for a special case where the inputs correspond to the following text,
 				// we add that text to those neurons
 				if (i === 0 && layerLength === 11) {
-					let inputKey = ["↖", "↑", "↗", "←", "→", "↙", "↓", "↘", "GO", "X", "Y"];
+					let inputKey = ["↖", "↑", "↗", "←", "→", "↙", "↓", "↘", "X", "Y", "osc"];
 					diagramNeuron.text = inputKey[index];
 				}
 

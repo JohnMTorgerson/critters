@@ -1,7 +1,12 @@
 import Simulator from './Simulator.js';
 import Critter from './critters/Critter.js';
+import Bouncer from './critters/Bouncer.js';
+import Thinker from './critters/Thinker.js';
+import Interactor from './critters/Interactor.js';
+import Predator from './critters/Predator.js';
+import Prey from './critters/Prey.js';
 const { ipcRenderer } = require('electron');
-
+const _ = require('lodash');
 
 // declare the global Simulator object
 let sim;
@@ -14,20 +19,30 @@ let opts = {
 		height: 500
 	},
 	cellSize : 5, // size of each creature/cell in the grid
-  numCritters : 800, // number of critters in each generation
+  numCritters : 750, // number of critters in each generation
 	numSteps : 200, // number of simulator steps each generation will last
 	defaultDelay : 0, // millisecond delay between each step in the simulator
 	autoplay : true, // whether to start each new generation automatically rather than pause between generations
 	actionMutationRate : 0.001, // mutation rate per gene (how often the action mutates)
 	weightMutationAmount : 0.001, // mutation amount added or subtracted to the weight of each gene every reproduction
 	biasMutationAmount : 0.005, // mutation amount added or subtracted to the bias of each neuron every reproduction
-	preyPredatorRatio: 8 // for predator-prey scenarios, the number of prey critters per predator critters
+	preyPredatorRatio: 4 // for predator-prey scenarios, the number of prey critters per predator critters
 }
 opts.worldWidth = Math.round(opts.canvasSize.width / opts.cellSize); // width of the canvas in cells (rather than in pixels)
 opts.worldHeight = Math.round(opts.canvasSize.height / opts.cellSize); // height of the canvas in cells (rather than in pixels)
 
 canvas.width = opts.canvasSize.width;
 canvas.height = opts.canvasSize.height;
+
+// we'll use this when loading simulations so we can load class instances dynamically
+const critterClasses = {
+	"Critter" : Critter,
+	"Bouncer" : Bouncer,
+	"Thinker" : Thinker,
+	"Interactor" : Interactor,
+	"Predator" : Predator,
+	"Prey" : Prey
+}
 
 function main(critters) {
 	// this is simply to keep the user-set speed between generations
@@ -36,13 +51,13 @@ function main(critters) {
 
 	// console.log('main');
 	runGeneration(opts.autoplay, () => {
+		if (generation % 200 === 0 && generation>0) saveSim();
+
 		let survivors = runSelection();
 		if (survivors.length < 2) {
 			window.alert('EXTINCTION');
 			return;
 		}
-
-		// console.log('Gen ' + generation + ' survivors: ' + survivors.length + ' (' + Math.round(survivors.length / opts.numCritters * 1000)/10 + '%)');
 
 		// let offspring = runReproduction(survivors);
 		let offspring = runPredPreyReproduction(survivors);
@@ -122,14 +137,17 @@ function runSelection() {
 	predators.splice(Math.ceil(predators.length/2)); // only keep half of the predators, those with the most kills
 	// predators.map(p => {console.log(p.killCount)});
 	let prey = critters.filter(c => c.constructor.name === "Prey"); // keep all the surviving prey
-
 	filtered = [...predators, ...prey];
 
 	return filtered;
 }
 
 function runReproduction(oldGen, numOffspring) {
-	if (typeof numOffspring === "undefined") numOffspring = opts.numCritters;
+
+	if (typeof numOffspring === "undefined") {
+		numOffspring = opts.numCritters;
+		console.log('Gen ' + generation + ' survivors: ' + oldGen.length + ' (' + Math.round(oldGen.length / opts.numCritters * 1000)/10 + '%)');
+	}
 
 	// before reproduction we have to empty the old simulator's worldMatrix
 	// because the offspring critters will inherit it, and need room to populate;
@@ -308,7 +326,12 @@ async function saveSim() {
 		// along with class name
 		data.critters.push({
 			type: critter.constructor.name,
-			params: critter.params
+			params: _.cloneDeepWith(critter.params,(value) => {
+				// since we can't clone functions, we'll save any functions as a string
+				if (_.isFunction(value)) {
+			    return value.toString();
+			  }
+			})
 		});
 
 		types.add(critter.constructor.name)
@@ -329,7 +352,64 @@ async function saveSim() {
 
 	if (msg === 'success') console.log(`============== SAVE =================\n${date.toTimeString()} - saved simulation at generation ${data.generation}\n=====================================`);
 
-	alert(msg === 'success' ? `Saved simulation at generation ${data.generation}!` : msg);
+	// alert(msg === 'success' ? `Saved simulation at generation ${data.generation}!` : msg);
+}
+
+async function loadSim() {
+	if (sim) sim.pause();
+
+	const data = await ipcRenderer.invoke('select-sim');
+	if (typeof data === 'string') {
+		// something went wrong
+		console.error(data);
+		alert(data);
+		return;
+	}
+
+	// console.log(JSON.stringify(fileContents.gameOpts));
+
+	// set game options and canvas size and generation
+	opts = data.gameOpts;
+	canvas.width = opts.canvasSize.width;
+	canvas.height = opts.canvasSize.height;
+	generation = data.generation;
+
+	// in the future, load obstacles here (we aren't saving those yet)
+
+	// make a dummy worldMatrix so each critter can be created with a position;
+	// later, the real worldMatrix will be created by the sim;
+	// this is a stupid way to do things, so we should probably just allow for
+	// a critter to be created with no position and have the sim assign it one;
+	// for now, I'm just doing this because it's easier, we'll change it later
+	let dummyWorldMatrix = (() => {
+		let cols = Math.round(canvas.width / opts.cellSize);
+		let rows = Math.round(canvas.height / opts.cellSize);
+		// return Array(rows).fill(Array(cols).fill(null)); // <-- this doesn't appear to work, since every row is just a reference to the same row
+		let matrix = [];
+		for (let r=0; r<rows; r++) {
+			let row = [];
+			for (let c=0; c<cols; c++) {
+				row.push(null);
+			}
+			matrix.push(row);
+		}
+		return matrix;
+	})();
+
+
+	// create critters array
+	// let critters = data.critters.map((obj) => new critterClasses[obj.type](canvas, [], opts, obj.params));
+	let critters = data.critters.map((obj) => {
+		obj.params.genome.internalParams.osc = {
+			on: true,
+			period: 10
+		};
+
+		return new critterClasses[obj.type](canvas, dummyWorldMatrix, opts, obj.params);
+	});
+
+	// start game with loaded critters
+	main(critters);
 }
 
 
@@ -338,7 +418,9 @@ window.onload = function() {
 	document.getElementById("save-btn").addEventListener("click", (e) => {
 		saveSim();
 	}, false);
-
+	document.getElementById("load-btn").addEventListener("click", (e) => {
+		loadSim();
+	}, false);
 
 	main();
 };
