@@ -3,10 +3,17 @@ import Critter from './Critter.js'
 import NeuralNet from './helpers/NeuralNet.js';
 import MindReader from '../inspector/MindReader.js';
 const _ = require('lodash');
+const math = require('mathjs');
 
 export default class Thinker extends Critter {
 	constructor(canvas, worldMatrix, gameOpts, params) {
 		super(canvas, worldMatrix, gameOpts, params)
+
+		if (!Array.isArray(params.sensorTypes) || params.sensorTypes.length === 0 ) {
+			// if sensorTypes is not supplied, make the default "all-else", meaning every type of
+			// object (including boundaries) will be sensed, and grouped together into a single set of input neurons
+			this.params.sensorTypes = ['all-else'];
+		}
 
 		this.angularRes = this.params.angularRes || 8; // angular resolution of sensory information
 
@@ -61,40 +68,95 @@ export default class Thinker extends Critter {
 	}
 
 	senseAll() {
-		// throw error if numSensorTypes is not 1,
-		// since a baseline Thinker can only accept 1;
-		// to use more than one, extend the class, and store that number of values
-		// per loop through the sensoryNeurons (the idea being to detect different kinds of objects)
-		// so that the number of senses matches the number of input neurons (which is controlled by numSensorTypes)
-		if (typeof this.params.numSensorTypes !== "undefined" && this.params.numSensorTypes !== 1) {
-			throw Error("A baseline Thinker can only accept 1 sensor type; please set params.numSensorTypes to 1 or do not pass a value");
-		}
+		// the sensors object contains an array of sensory information for each different type of object that can be sensed
+		// this.params.sensorTypes will determine how these are mapped to the actual input neurons at the end of this function
+		let possibleTypes = ['boundary','Obstacle','Bouncer','Thinker','Predator','Prey'];
+		let sensors = {};
+		possibleTypes.forEach(type => {
+			sensors[type] = Array(this.angularRes).fill(0);
+		});
+		let leftovers = Array(this.angularRes).fill(0); // if 'all-else' is included in this.params.sensorTypes, we'll combine any leftover sensory arrays into their own single set of input neurons
 
 		// gather the sensory input
-		let senses = [];
-		for (let i=0; i<this.genome.sensoryNeurons.length; i++) {
-			// since this._sense returns the whole critter if it finds one,
-			// or any information stored by any other object in the worldMatrix,
-			// we could use that information to sense different properties of those things, in principle;
-			// for now, though, we just return a 1 if anything is there (0 if not)
-			let thing = this._sense(this.genome.sensoryNeurons[i]);
-			senses.push(thing !== null ? 1 : 0);
+		for (let i=0; i<this.genome.sensoryInputs.length; i++) {
+			// the critter stores an input object for each cell within its sensory radius,
+			// the information therein being the coordinates of that cell,
+			// its "magnitude" (inversely proportional to distance), and an "index",
+			// which corresponds to its angle, the angles being divided up into wedges,
+			// the number of which is determined by this.angularRes; each wedge corresponds
+			// to a single input neuron (for each type of thing being sensed)
+			let input = this.genome.sensoryInputs[i];
+
+			// since this._sense returns the whole object it finds (if any),
+			// we use that information to sense several different kinds of things;
+			// so the critter can distinguish prey from walls and predators, etc.
+			let thing = this._sense(input.coords);
+
+			// console.log(
+			// 	`thing: ${thing !== null}\n`+
+			// 	`coords: ${input.coords.x}, ${input.coords.y}\n`+
+			// 	`magnitude: ${input.magnitude}\n`+
+			// 	`index: ${input.index}`
+			// );
+
+			// now add the sensed thing to its appropriate sensory array, based on what kind of thing it is;
+			// but only if its magnitude is greater than anything of the same kind already sensed in that same wedge
+			if (thing !== null) {
+				if (typeof thing === 'number') {
+					// it's a boundary wall
+					sensors.boundary[input.index] = Math.max(sensors.boundary[input.index],input.magnitude);
+				} else if (Array.isArray(sensors[thing.constructor.name])) {
+					sensors[thing.constructor.name][input.index] = Math.max(sensors[thing.constructor.name][input.index],input.magnitude)
+				}
+			}
 		}
-		// add updated, normalized x and y positions of the critter, and the constant
-		// (if x or y sensing is set to false, we just set the values at 0 so the neurons are never activated)
+
+		// add updated, normalized x and y positions of the critter, and the oscillator
+		// (if x or y sensing or oscillator is set to false, we just set the values at 0 so the neurons are never activated)
 		let x = 0;
 		let y = 0;
 		let osc = 0;
 		if (this.genome.internalParams.x) x = this.position.x / this.worldWidth * 2 - 1;
 		if (this.genome.internalParams.y) y = this.position.y / this.worldHeight * 2 - 1;
 		if (this.genome.internalParams.osc.on) osc = (this.stepCount % this.genome.internalParams.osc.period) / (this.genome.internalParams.osc.period - 1);
-		senses = senses.concat([x,y,osc]);
-		// console.log('------------------');
-		// console.log(`x:${this.position.x/this.cellSize + .5}, y:${this.position.y/this.cellSize + .5}`);
-		// console.log('senses: ' + senses);
+		let internalSensors = [x,y,osc];
 
-		return senses;
+		// let senses = [...obstacleSensors, ...boundarySensors, ...preySensors, ...predatorSensors, ...internalSensors];
+		let inputNeurons = [];
+
+		// Object.entries(sensors).forEach(([type,senseArray]) => {
+		// 	if (this.params.sensorTypes.includes(type)) {
+		// 		inputNeurons = inputNeurons.concat(senseArray);
+		// 		delete sensors[type];
+		// 	}
+		// });
+
+		this.params.sensorTypes.forEach(type => {
+			if (Array.isArray(sensors[type])) { // will exclude the 'all-else' entry, which we will address below
+				inputNeurons = [...inputNeurons,...sensors[type]];
+				delete sensors[type];
+			}
+		});
+
+		// if sensorTypes includes the 'all-else' entry, then we want to combine any sensors
+		// that weren't given their own set of input neurons into a 'leftovers' set of input neurons
+		if (this.params.sensorTypes.includes('all-else')) {
+			// so loop through sensors (the only types remaining should be ones that weren't assigned
+			// to a set of input neurons in the previous loop)
+			Object.values(sensors).forEach(senseArray => {
+				// and map over the leftovers array, keeping whichever value for each index is highest
+				leftovers = leftovers.map((val,index) => Math.max(val,senseArray[index]));
+			});
+			inputNeurons = inputNeurons.concat(leftovers);
+		}
+
+		// lastly, add the internal sensors (x & y position, oscillator, etc)
+		inputNeurons = inputNeurons.concat(internalSensors);
+
+		return inputNeurons;
 	}
+
+
 
 	// reproduction method,
 	// takes another critter to mate with as an argument
@@ -224,7 +286,7 @@ export default class Thinker extends Critter {
 		let senseY = typeof this.params.senseY !== "undefined" ? this.params.senseY : true; // whether the critter can sense its absolute y position or not (boolean)
 		let oscOn = typeof this.params.oscOn === "boolean" ? this.params.oscOn : true; // whether to include an internal oscillator among the critter's inputs
 		let oscPeriod = Number.isFinite(this.params.oscPeriod) ? Math.max(this.params.oscPeriod,2) : 10; // 2 is the minimum oscillator period, default is 10
-		let numSensorTypes = typeof this.params.numSensorTypes !== "undefined" ? this.params.numSensorTypes : 1; // the number of different objects the critter can distinguish (e.g. can it tell the difference between an obstacle and another critter?)
+		let numSensorTypes = this.params.sensorTypes.length; // the number of different objects the critter can distinguish (e.g. can it tell the difference between an obstacle and another critter?)
 
 		// console.log(`numSensorTypes == ${numSensorTypes}`);
 
@@ -234,7 +296,35 @@ export default class Thinker extends Critter {
 		for (let y=0-radius; y<=radius; y++) {
 			for (let x=0-radius; x<=radius; x++) {
 				if (Math.round(Math.sqrt(Math.pow(x,2) + Math.pow(y,2))) <= radius) {
-					if (x!==0 || y!==0) genome.sensoryInputs.push({x:x,y:y});
+					if (x!==0 || y!==0) {
+						// calculate the magnitude, which is inversely proportional to the distance
+						// of the coordinates from the critter
+						let angle = math.atan2(0-y,x); // [0,pi] when y>=0, (-pi,0) when y<0
+						if (angle < 0) angle = (2*Math.PI) + angle; // change -y positions to go from pi to 2pi
+						let distance = math.distance([0,0],[x,y]);
+						let magnitude = distance !== 0 ? 1/distance : 1; // distance should never be 0, but just in case
+						if (magnitude > 0.707) magnitude = 1; // just a gross hack to make sure stuff immediately to the intercardinal directions is given a magnitude of 1
+
+						// convert the angle into an array index corresponding to which angular wedge it fits into;
+						// an angle of 0, for instance, is y = 0, 0 <= x < 2pi/angularRes, and proceeding counter-clockwise
+						// but we want the first wedge to point directly east; so if this.angularRes is 4,
+						// we adjust the wedges so that angles of 0 to pi/4 and 7pi/4 to 2pi are in wedge 0;
+						// in other words, everything's just offset by half a wedge;
+						// we're doing this so that with 8 divisions, for example,
+						// we can correspond them to the cardinal and intercardinal directions (E,NE,N, NW, etc...);
+						// this is not only helpful to visualize, but it also corresponds more neatly with where things can be in the actual grid (at least nearby things)
+						let index = Math.floor((angle + (Math.PI/this.angularRes)) / (2 * Math.PI) * this.angularRes) % this.angularRes;
+
+
+						genome.sensoryInputs.push({
+							coords: {
+								x:x,
+								y:y
+							},
+							index: index,
+							magnitude: magnitude
+						});
+					}
 				}
 			}
 		}

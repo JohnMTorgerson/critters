@@ -198,7 +198,7 @@ function runReproduction(oldGen, numOffspring) {
 
 // special reproduction function just for predator/prey scenarios
 function runPredPreyReproduction(oldGen) {
-	let numPreds = Math.ceil(opts.numCritters / opts.preyPredatorRatio);
+	let numPreds = Math.ceil(opts.numCritters / (opts.preyPredatorRatio + 1));
 	let numPrey = opts.numCritters - numPreds;
 
 	let predParents = oldGen.filter(c => c.constructor.name === "Predator");
@@ -366,7 +366,17 @@ async function loadSim() {
 		return;
 	}
 
-	// console.log(JSON.stringify(fileContents.gameOpts));
+	// // temporary override of some gameOpts parameters:
+	// data.gameOpts.preyPredatorRatio = 6;
+	// data.gameOpts.numCritters = 1250;
+	// data.gameOpts.canvasSize = {
+	// 	width:  1300,
+	// 	height: 1300
+	// },
+	// data.gameOpts.worldWidth = Math.round(data.gameOpts.canvasSize.width / data.gameOpts.cellSize); // width of the canvas in cells (rather than in pixels)
+	// data.gameOpts.worldHeight = Math.round(data.gameOpts.canvasSize.height / data.gameOpts.cellSize); // height of the canvas in cells (rather than in pixels)
+
+
 
 	// set game options and canvas size and generation
 	opts = data.gameOpts;
@@ -400,10 +410,13 @@ async function loadSim() {
 	// create critters array
 	// let critters = data.critters.map((obj) => new critterClasses[obj.type](canvas, [], opts, obj.params));
 	let critters = data.critters.map((obj) => {
-		obj.params.genome.internalParams.osc = {
-			on: true,
-			period: 10
-		};
+		// // temporary measures to convert old saved populations:
+		// obj.params.genome.internalParams.osc = {
+		// 	on: true,
+		// 	period: 10
+		// };
+		// obj.params.sensorTypes = ['Obstacle','boundary','Prey','Predator'];
+
 
 		return new critterClasses[obj.type](canvas, dummyWorldMatrix, opts, obj.params);
 	});
