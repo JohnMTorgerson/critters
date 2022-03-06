@@ -5,12 +5,14 @@ export default class NetWidget {
 		this.critter = critter;
 		this.neuronRadius = 15;
 		this.vSpacing = 100;
+		this.smallVSpacing = 2.5 * this.neuronRadius;
 		this.outputText = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
 
 		// create new canvas to display diagram
 		this.canvas = document.createElement("canvas");
-		this.canvas.width = 500;
-		this.canvas.height = 700;
+		this.canvas.width = 700;
+		this.canvas.height = 1000;
+		this.diagramWidth = 500; // the space allocated for the neuron diagram (not including text labels on the side)
 		parentElement.appendChild(this.canvas);
 		this.context = this.canvas.getContext("2d");
 
@@ -25,11 +27,12 @@ export default class NetWidget {
 		// that neuron's x and y coordinates and size on the canvas
 		// (as well as its value and weights)
 		this.diagram = [];
+		this.sensorTypeLabels = [];
     for (let i=0; i<this.critter.genome.brain.network.length; i++) {
       let networkLayer = this.critter.genome.brain.network[i];
       let layerLength = networkLayer.weights.length;
-			let spacing = this.canvas.width/(layerLength+1);
-      let neurY = this.vSpacing * (i+1);
+			let spacing = this.diagramWidth/(layerLength+1);
+      let neurY = this.vSpacing * (i+1) + (Math.min(i,1) * this.smallVSpacing * Math.floor(this.critter.genome.brain.network[0].weights.length / this.critter.angularRes));
 			let finalLayer = i === this.critter.genome.brain.network.length-1; // boolean for if this is the final (output) layer
 
 			let diagramLayer = [];
@@ -50,6 +53,12 @@ export default class NetWidget {
 					weights: weights
 				};
 
+				if (i == 0) {
+					// split input layer into multiple rows if it has more than one sensor block
+					diagramNeuron.y = neurY + this.smallVSpacing * Math.floor(index / this.critter.angularRes);
+					diagramNeuron.x = this.diagramWidth/(this.critter.angularRes+1) * (index%this.critter.angularRes + 1);
+				}
+
 				if (finalLayer) {
 					diagramNeuron.text = this.outputText[index];
 					diagramNeuron.outputNeuron = true;
@@ -58,12 +67,29 @@ export default class NetWidget {
 				// just for a special case where the inputs correspond to the following text,
 				// we add that text to those neurons
 				if (i === 0 && layerLength === 11) {
-					let inputKey = ["↖", "↑", "↗", "←", "→", "↙", "↓", "↘", "X", "Y", "osc"];
+					let inputKey = ["→", "↗", "↑", "↖", "←", "↙", "↓", "↘", "X", "Y", "osc"];
 					diagramNeuron.text = inputKey[index];
 				}
 
 				diagramLayer.push(diagramNeuron);
 			});
+
+			// create text labels for each type of object a group of input neurons senses
+			// (but only if there's more than one)
+			if (i == 0 && this.critter.params.sensorTypes.length > 1) {
+				this.critter.params.sensorTypes.forEach((type,index) => {
+					this.sensorTypeLabels.push({
+						text: "← " + type,
+						x: this.diagramWidth,
+						y: neurY + this.smallVSpacing * index
+					});
+				});
+				this.sensorTypeLabels.push({
+					text: "← internal",
+					x: this.diagramWidth,
+					y: neurY + this.smallVSpacing * this.critter.params.sensorTypes.length
+				});
+			}
 
 			this.diagram.push(diagramLayer);
     }
@@ -75,6 +101,14 @@ export default class NetWidget {
 
 	draw() {
 		this.clear();
+
+		// title
+		this.context.font = `${this.neuronRadius * 2.5}px Verdana`;
+		this.context.textBaseline = 'top';
+		this.context.textAlign = 'center';
+		this.context.fillStyle = '#CCCCCC';
+		this.context.fillText("Neural Net Diagram", this.diagramWidth/2, 0);
+
 
 		// loop through each layer of the diagram
 		for (let l=0; l<this.diagram.length; l++) {
@@ -131,14 +165,25 @@ export default class NetWidget {
 				}
 			}
 		}
+
+		// if there are any type labels (for the different types of sensory neurons)
+		// draw them
+		this.sensorTypeLabels.forEach(label => {
+			this.context.font = `${this.neuronRadius * 1.8}px Verdana`;
+			this.context.textBaseline = 'middle';
+			this.context.textAlign = 'left';
+			this.context.fillStyle = '#CCCCCC';
+			this.context.fillText(label.text, label.x, label.y);
+
+		});
 	}
 
 	clear() {
 		// clear canvas
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		this.context.rect(0, 0, this.canvas.width, this.canvas.height);
-		this.context.fillStyle = "#444444";
-		this.context.fill();
+		// this.context.rect(0, 0, this.canvas.width, this.canvas.height);
+		// this.context.fillStyle = "#444444";
+		// this.context.fill();
 	}
 
 	click(e) {
